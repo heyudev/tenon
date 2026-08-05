@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# 本地数据库与导出物（真相源在本地，不进仓库）
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+export/
+
+.env
+.env.local
+.DS_Store

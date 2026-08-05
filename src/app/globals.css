@@ -1,0 +1,404 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*  榫 Tenon · 设计令牌
+    墨 / 宣 / 朱砂——现代极简的中式底色。
+    规则：颜色只有三个层级（底、面、线），强调色只有一个，语义色只在数据里出现。 */
+@theme {
+  --color-ink-900: #08090b; /* 最底 */
+  --color-ink-850: #0b0d10;
+  --color-ink-800: #101317; /* 面 */
+  --color-ink-750: #161a1f;
+  --color-ink-700: #1d2228;
+
+  --color-bone-100: #f7f5f1; /* 宣纸 */
+  --color-bone-200: #eeebe4;
+  --color-bone-300: #ddd8ce;
+
+  --color-cinnabar: #d0503e; /* 朱砂：唯一强调色 */
+  --color-cinnabar-soft: #e0705e;
+  --color-celadon: #6e9e93; /* 青：负反馈 / 稳态 */
+  --color-ochre: #c9a227; /* 赭：警示 */
+
+  --font-sans:
+    ui-sans-serif, -apple-system, 'SF Pro Text', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', system-ui, sans-serif;
+  --font-serif: 'Songti SC', 'Source Han Serif SC', 'Noto Serif SC', Georgia, serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+
+  /*  榫卯的动作只有一种：沿一根轴推进去，到位硬停。
+      入榫——起步要克服静摩擦所以稍缓，中段快，末端 10% 内收死，绝不回弹。
+      脱榫——反过来：起步慢（得拔），离开时快。 */
+  --ease-seat: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-part: cubic-bezier(0.4, 0, 0.9, 0.4);
+}
+
+/*  字号只有五档，别再随手调 0.5px：
+    11 micro（图上角标）· 12 meta（次要信息）· 14 body（正文）
+    18 title（区块标题）· 26 display（页面主标题，配 .display 上宋体）
+    层级靠字重 / 字色 / 间距拉开，不靠再切一档字号。 */
+
+:root {
+  --bg: var(--color-bone-100);
+  --bg-sunk: #f1eee8;
+  --surface: #fffefb;
+  --line: rgb(20 22 26 / 0.1);
+  --line-soft: rgb(20 22 26 / 0.06);
+  --text: #14171b;
+  --text-dim: #5c6169;
+  --text-faint: #8d939b;
+  --accent: var(--color-cinnabar);
+  --on-accent: #fffefb;
+  --shadow-lift: 0 1px 2px rgb(20 22 26 / 0.04), 0 8px 24px -12px rgb(20 22 26 / 0.12);
+  /* 宣纸的纤维：深色噪点压在浅底上 */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.06'/%3E%3C/svg%3E");
+}
+
+.dark {
+  --bg: var(--color-ink-900);
+  --bg-sunk: #060709;
+  --surface: var(--color-ink-800);
+  --line: rgb(255 255 255 / 0.09);
+  --line-soft: rgb(255 255 255 / 0.05);
+  --text: #e9e6e0;
+  --text-dim: #9aa0a8;
+  --text-faint: #6b7178;
+  --accent: var(--color-cinnabar-soft);
+  --on-accent: #17090a;
+  --shadow-lift: 0 1px 0 rgb(255 255 255 / 0.03), 0 16px 40px -24px rgb(0 0 0 / 0.8);
+  /* 墨底上反过来：浅噪点，像宣纸背面透过来的光 */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.13'/%3E%3C/svg%3E");
+}
+
+* {
+  border-color: var(--line);
+}
+
+/* 键盘焦点：一道朱砂方框。只在键盘导航时出现，鼠标点击不打扰 */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 0;
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  background-color: var(--bg);
+  background-image: var(--grain);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'tnum' 1, 'cv05' 1;
+  overscroll-behavior: none;
+}
+
+/*  自定义类一律放 components 层。
+    Tailwind v4 的工具类在 @layer utilities，优先级低于未分层的 CSS——
+    `.field { width: 100% }` 写在层外会把 `w-[170px]` 这类全部压掉。 */
+@layer components {
+  /* ── 排印原语 ───────────────────────────────── */
+
+  /* 页面主标题：宋体。做小说的系统，标题不用宋体是白瞎 */
+  .display {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  /* 小型标签：全大写、宽字距，用来分区，不用框 */
+  .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    font-weight: 500;
+  }
+
+  .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  .hairline {
+    border-top: 1px solid var(--line-soft);
+  }
+
+  /* 面：不用阴影堆叠，用色差与发丝线做层级 */
+  .surface {
+    background: var(--surface);
+    border: 1px solid var(--line-soft);
+  }
+
+  .sunk {
+    background: var(--bg-sunk);
+  }
+
+  /* ── 版框 ───────────────────────────────────────
+     雕版书的页框，替掉通用 SaaS 的圆角卡片。
+     文武边：外一道粗线、内一道细线，中间留一线白。方角，不做圆角。 */
+  .frame {
+    background: var(--surface);
+    border: 1.5px solid var(--line);
+    box-shadow: inset 0 0 0 2px var(--bg), inset 0 0 0 3px var(--line-soft);
+  }
+
+  /* 单边框：轻量分区用，只留外面那一道 */
+  .frame-thin {
+    background: var(--surface);
+    border: 1px solid var(--line);
+  }
+
+  /* 界栏：雕版书里分行的那道竖线。
+     按列数选类——网格里不能用 `* + *`，那会给每行第一列也画上。 */
+  .rules-2 > *,
+  .rules-3 > * {
+    padding-right: 20px;
+  }
+  .rules-2 > *:nth-child(2n),
+  .rules-3 > *:nth-child(3n) {
+    padding-right: 0;
+  }
+  .rules-2 > *:not(:nth-child(2n + 1)),
+  .rules-3 > *:not(:nth-child(3n + 1)) {
+    border-left: 1px solid var(--line-soft);
+    padding-left: 20px;
+  }
+
+  /* 鱼尾：版心的分节标记，用来断开长段落列表 */
+  .fishtail {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-faint);
+  }
+  .fishtail::before,
+  .fishtail::after {
+    content: '';
+    height: 1px;
+    flex: 1;
+    background: var(--line-soft);
+  }
+}
+
+/* ── 滚动条 ─────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 99px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+  background-clip: content-box;
+  border: 3px solid transparent;
+}
+
+/* ── 表单 ───────────────────────────────────── */
+input,
+textarea,
+select {
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-faint);
+}
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+}
+
+@layer components {
+  /*  纵向内边距 4px + 行高 1.5 → 内容高 29px，塞得进 h-8（可用 30px）。
+      正文提到 14px 之后，原来的 8px 内边距会让 h-7/h-8 的控件把字裁掉一截。 */
+  .field {
+    width: 100%;
+    background: var(--bg-sunk);
+    border: 1px solid var(--line-soft);
+    border-radius: 2px;
+    padding: 4px 10px;
+    font-size: 14px;
+    line-height: 1.5;
+    transition: border-color 0.15s var(--ease-seat), background 0.15s var(--ease-seat);
+  }
+  /* 多行输入不受定高约束，给回舒服的呼吸 */
+  textarea.field {
+    padding-block: 8px;
+  }
+  .field:focus {
+    border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+    background: var(--surface);
+  }
+}
+
+/* ── 动效 ─────────────────────────────────────
+   全站只有「入榫」一种入场：沿一根轴滑到位。
+   透明度只在前 40% 帮一把，主观感受必须来自位移——榫卯没有淡入这回事。 */
+
+@keyframes seat {
+  from {
+    opacity: 0;
+    transform: translate3d(var(--seat-x, -14px), var(--seat-y, 0), 0);
+  }
+  40% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/** 横向入榫（默认：从左推入）。面板、详情栏用这个 */
+.seat {
+  animation: seat 0.28s var(--ease-seat) both;
+}
+/** 从右推入：右侧栏的详情该往左坐进去 */
+.seat-r {
+  --seat-x: 14px;
+}
+/** 纵向入榫：整页分区自上而下坐下来 */
+.seat-y {
+  --seat-x: 0;
+  --seat-y: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seat {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Markdown 渲染（知识卡片 / AI 产出） ──────── */
+.prose-tenon {
+  font-size: 14px;
+  line-height: 1.85;
+  color: var(--text-dim);
+}
+.prose-tenon > * + * {
+  margin-top: 0.85em;
+}
+.prose-tenon h2,
+.prose-tenon h3 {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  margin-top: 1.6em;
+}
+.prose-tenon strong {
+  color: var(--text);
+  font-weight: 600;
+}
+.prose-tenon code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--bg-sunk);
+  padding: 1px 5px;
+  border-radius: 2px;
+  color: var(--accent);
+}
+.prose-tenon pre {
+  background: var(--bg-sunk);
+  border: 1px solid var(--line-soft);
+  border-radius: 2px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.75;
+  color: var(--text-dim);
+}
+.prose-tenon pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+.prose-tenon blockquote {
+  border-left: 2px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  padding-left: 14px;
+  color: var(--text-dim);
+  font-style: normal;
+}
+.prose-tenon ul,
+.prose-tenon ol {
+  padding-left: 1.15em;
+}
+.prose-tenon li {
+  margin-top: 0.3em;
+}
+.prose-tenon ul > li {
+  list-style: none;
+  position: relative;
+}
+.prose-tenon ul > li::before {
+  content: '';
+  position: absolute;
+  left: -0.9em;
+  top: 0.72em;
+  width: 3px;
+  height: 3px;
+  border-radius: 99px;
+  background: var(--text-faint);
+}
+.prose-tenon ol > li {
+  list-style: decimal;
+}
+.prose-tenon table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  display: block;
+  overflow-x: auto;
+}
+.prose-tenon th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--text-faint);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 8px 12px 8px 0;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.prose-tenon td {
+  padding: 9px 12px 9px 0;
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: top;
+}
+.prose-tenon .task {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.prose-tenon .task::before {
+  content: '';
+  flex: none;
+  width: 11px;
+  height: 11px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  transform: translateY(1px);
+}
