@@ -5,7 +5,8 @@ import type { Chapter, Character, HookType, Project, Thread, Volume } from '@/li
 import type { GateItem } from '@/lib/stages'
 import { addChapter, updateChapter, updateThread } from '@/lib/actions'
 import { AiOutput, useAiRun } from '@/components/AiPanel'
-import { Button, Check, Chip, Empty, Eyebrow, Meter, cx } from '@/components/ui'
+import { Button, Check, Chip, Empty, Eyebrow, Meter, Segmented, cx } from '@/components/ui'
+import Autopilot from './Autopilot'
 
 const HOOKS: HookType[] = ['危机钩', '悬念钩', '期待钩', '反转钩']
 const BEATS = ['蓄能', '过渡', '微爽', '中爽', '大爽'] as const
@@ -43,6 +44,8 @@ export default function WriteDesk({
 }) {
   const [curId, setCurId] = useState<string | null>(chs.at(-1)?.id ?? null)
   const [tab, setTab] = useState<Tab>('brief')
+  // 逐章＝人主导的默认路径；自主＝委员会自己往下写，显式切进去
+  const [mode, setMode] = useState<'manual' | 'auto'>('manual')
   const ai = useAiRun()
   const cur = chs.find((c) => c.id === curId) ?? null
 
@@ -82,6 +85,15 @@ export default function WriteDesk({
           <p className="mt-1 text-[12px] leading-relaxed text-[var(--text-faint)]">
             规划 → 生成 → 门禁 → 回写
           </p>
+          <Segmented
+            className="mt-3 w-full"
+            value={mode}
+            onChange={setMode}
+            options={[
+              { value: 'manual', label: '逐章' },
+              { value: 'auto', label: '自主' },
+            ]}
+          />
         </div>
         <div className="px-2 pb-6">
           {chs.map((c) => (
@@ -114,7 +126,11 @@ export default function WriteDesk({
 
       {/* 主区 */}
       <div className="min-w-0 flex-1 overflow-y-auto">
-        {!cur ? (
+        {mode === 'auto' ? (
+          <div className="max-w-[820px] px-8 py-7">
+            <Autopilot projectId={project.id} />
+          </div>
+        ) : !cur ? (
           <Empty>还没有章节。先去 14 事件线排出本卷 40 章，或在左栏直接新建。</Empty>
         ) : (
           <div>
@@ -421,8 +437,8 @@ export default function WriteDesk({
         )}
       </div>
 
-      {/* 右栏：流水线 + 门禁 */}
-      {cur && (
+      {/* 右栏：流水线 + 门禁。自主模式下整条流水线由引擎跑，不需要手点 */}
+      {mode === 'manual' && cur && (
         <aside className="w-[340px] flex-none overflow-y-auto border-l border-[var(--line-soft)] px-6 py-6">
           <Eyebrow>五角色流水线</Eyebrow>
           <div className="mt-2.5 space-y-1.5">
