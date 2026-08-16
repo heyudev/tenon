@@ -24,9 +24,6 @@ export default function HubLayout({ children }: { children: React.ReactNode }) {
           <NavLink href="/overview">系统全貌</NavLink>
 
           <div className="eyebrow px-2.5 pb-1.5 pt-4">资产层 · 跨书共享</div>
-          <NavLink href="/rulebase">规则库</NavLink>
-          <NavLink href="/graph">概念图谱</NavLink>
-          <NavLink href="/lab">组合实验室</NavLink>
           <NavLink href="/platforms">阵地库</NavLink>
           <NavLink href="/craft">方法论库</NavLink>
           <NavLink href="/glossary">术语表</NavLink>

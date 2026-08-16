@@ -2,19 +2,22 @@
 
 import { useMemo, useState } from 'react'
 import type { Chapter, Metric } from '@/lib/types'
+import { OPERATORS, type Venue } from '@/lib/platform'
 import type { StageViewProps } from './GenericStage'
 import StageFrame, { useAutoSave } from '@/components/stage/StageFrame'
 import { FieldView } from '@/components/stage/Fields'
 import { saveMetric } from '@/lib/actions'
 import { Eyebrow, cx } from '@/components/ui'
 
-const FANQIE = [
+/** 免费阅读（广告分成）看留存：完读、追读、书架 */
+const FREE = [
   { id: 'finish', label: '完读率', healthy: (v: number, no: number) => (no <= 3 ? v >= 60 : v >= 75), hint: '前 3 章 >60%，常规章 >75%' },
   { id: 'follow', label: '追读率', healthy: (v: number) => v >= 30, hint: '>30% 为佳' },
   { id: 'shelf', label: '加书架率', healthy: (v: number) => v >= 15, hint: '前 5 章 >15%' },
 ] as const
 
-const QIDIAN = [
+/** 付费订阅看转化：收藏、首订、追订比 */
+const PAID = [
   { id: 'shelf', label: '收藏转化', healthy: (v: number) => v >= 10, hint: '点击→收藏' },
   { id: 'sub_first', label: '首订率', healthy: (v: number) => v >= 8, hint: '决定生死' },
   { id: 'sub_ratio', label: '追订/均订', healthy: (v: number) => v >= 70, hint: '<70% 说明近期内容在劝退老读者' },
@@ -28,13 +31,14 @@ export default function MetricStage({
   weight,
   autos,
   progress,
-  platform,
+  venue,
   chapters,
   rows,
-}: StageViewProps & { platform: string; chapters: Chapter[]; rows: Metric[] }) {
+}: StageViewProps & { venue: Venue; chapters: Chapter[]; rows: Metric[] }) {
   const form = useAutoSave(projectId, stage.id, state.data)
   const [entry, setEntry] = useState<number | null>(null)
-  const specs = platform === '番茄' ? FANQIE : QIDIAN
+  // 看哪套健康线取决于商业模型（免费看留存 / 付费看转化），不是平台名
+  const specs = OPERATORS[venue.operator].biz === '付费订阅' ? PAID : FREE
   const byNo = useMemo(() => new Map(rows.map((r) => [r.chapter_no, r])), [rows])
 
   // 流失尖峰：明显高于相邻章的流失
@@ -59,7 +63,7 @@ export default function MetricStage({
       weight={weight} autos={autos} progress={progress}
       aside={
         <section>
-          <Eyebrow>健康线 · {platform}</Eyebrow>
+          <Eyebrow>健康线 · {venue.name}</Eyebrow>
           <div className="mt-2.5 space-y-2.5">
             {specs.map((s) => {
               const vals = rows.map((r) => r[s.id as keyof Metric] as number | null).filter((v): v is number => v != null)

@@ -2,7 +2,7 @@
 /**
  * 从一个 markdown 小说项目目录**提取大纲结构**，建成榫里的一本书。
  *
- *   npm run import -- "<项目目录>" [--platform 起点] [--title 书名] [--dry]
+ *   npm run import -- "<项目目录>" [--venue qidian] [--title 书名] [--dry]
  *
  * 目录必须由参数显式给出——系统不认识、也不默认关联任何外部位置。
  * 提取是一次性的：跑完之后书就完全活在 data/tenon.db 里，与来源目录再无关系。
@@ -27,6 +27,20 @@ import path from 'node:path'
 const ROOT = process.cwd()
 const DB_PATH = process.env.TENON_DB ?? path.join(ROOT, 'data', 'tenon.db')
 
+/**
+ * 阵地 → 派生的运营商与频道。
+ * 阵地是真相源，platform/channel 只是它的派生展示字段——所以这里只收 --venue 一个参数，
+ * 不再单独接受 --platform / --channel（那样能导出「venue=fanqie-m 而 platform=起点」的自相矛盾记录）。
+ * ⚠ 改 src/lib/platform.ts 的 VENUES 时同步这张表。
+ */
+const VENUES = {
+  'fanqie-m': ['番茄', '男频'], 'fanqie-f': ['番茄', '女频'],
+  'qimao-m': ['七猫', '男频'], 'qimao-f': ['七猫', '女频'],
+  qidian: ['阅文', '男频'], qdmm: ['阅文', '女频'],
+  hongxiu: ['阅文', '女频'], yunqi: ['阅文', '女频'],
+  jjwxc: ['晋江', '女频'], zongheng: ['纵横', '男频'],
+}
+
 const args = process.argv.slice(2)
 const flag = (n) => {
   const i = args.indexOf(`--${n}`)
@@ -38,7 +52,7 @@ const withBody = args.includes('--with-body')
 
 const bookDir = args.find((a) => !a.startsWith('--') && fs.existsSync(a))
 if (!bookDir) {
-  console.error('用法：npm run import -- "<项目目录>" [--platform 起点] [--title 书名] [--dry]')
+  console.error(`用法：npm run import -- "<项目目录>" [--venue <${Object.keys(VENUES).join('|')}>] [--title 书名] [--dry]`)
   console.error('      目录必须显式给出，系统不预设任何外部位置。')
   process.exit(1)
 }
@@ -226,10 +240,15 @@ const uniqPeople = [...new Map(people.map((p) => [p.name, p])).values()].slice(0
 
 /* ── 汇报 ── */
 const title = flag('title') ?? path.basename(bookDir).replace(/^小说[A-Z]_/, '').replace(/[《》]/g, '')
-const platform = flag('platform') ?? '番茄'
+const venueId = flag('venue') ?? 'fanqie-m'
+if (!VENUES[venueId]) {
+  console.error(`未知阵地「${venueId}」。可选：${Object.keys(VENUES).join(' / ')}`)
+  process.exit(1)
+}
+const [platform, channel] = VENUES[venueId]
 console.log(`
   提取源：${bookDir}
-  书名：${title}｜平台：${platform}｜模式：${withBody ? '⚠ 含正文' : '大纲层（正文位置留空）'}
+  书名：${title}｜阵地：${venueId}（${platform} · ${channel}）｜模式：${withBody ? '⚠ 含正文' : '大纲层（正文位置留空）'}
   ─────────────────────────────
   章目录     ${String(chapterFiles.length).padStart(4)} ${textDir ? '（卷号/章号/标题）' : '（未找到「正文」目录）'}
   章节摘要   ${String(summaries.size).padStart(4)} ${recDir ? '' : '（未找到「章节记录」）'}
@@ -254,7 +273,7 @@ const pid = rid('bk')
 const t = now()
 db.transaction(() => {
   db.prepare('INSERT INTO projects(id,title,venue,platform,channel,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)')
-    .run(pid, title, flag('venue') ?? 'fanqie-m', platform, flag('channel') ?? '男频', '连载中', t, t)
+    .run(pid, title, venueId, platform, channel, '连载中', t, t)
 
   const volIds = new Map()
   for (const v of [...new Set(chapterFiles.map((c) => c.vol))].sort((a, b) => a - b)) {

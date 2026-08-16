@@ -95,7 +95,7 @@ export default function RouteRail({
           onClick={() => setMode(mode === 'route' ? 'all' : 'route')}
           className="text-[12px] text-[var(--text-faint)] transition-colors hover:text-[var(--text)]"
         >
-          {mode === 'route' ? '本书路线' : '全图 50 环节'}
+          {mode === 'route' ? '本书路线' : '全图 46 环节'}
           <span className="ml-1 opacity-60">切换</span>
         </button>
         <span className="num ml-auto text-[12px] text-[var(--text-faint)]">

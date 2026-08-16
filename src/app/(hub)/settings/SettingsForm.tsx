@@ -15,7 +15,7 @@ export default function SettingsForm({
   probes: Record<string, { ok: boolean; detail: string }>
   current: string
   models: Record<string, string>
-  counts: { rules: number; concepts: number; edges: number; craft: number }
+  counts: { craft: number; resources: number }
 }) {
   const [sel, setSel] = useState(current)
   const [mdl, setMdl] = useState(models)
@@ -106,10 +106,8 @@ export default function SettingsForm({
         <Eyebrow>资产层</Eyebrow>
         <div className="mt-3 grid grid-cols-4 gap-px overflow-hidden border border-[var(--line-soft)] bg-[var(--line-soft)]">
           {[
-            ['规则', counts.rules],
-            ['概念', counts.concepts],
-            ['因果边', counts.edges],
             ['方法论卡', counts.craft],
+            ['核心资源', counts.resources],
           ].map(([k, v]) => (
             <div key={k as string} className="bg-[var(--surface)] px-4 py-3">
               <div className="eyebrow">{k}</div>

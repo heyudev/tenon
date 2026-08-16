@@ -1,4 +1,4 @@
-import { cast, chapters, locks, projectRules, projects, stageStore, threads, volumes } from '../repo'
+import { cast, chapters, locks, projects, stageStore, threads, volumes } from '../repo'
 import type { Chapter, Project } from '../types'
 import { VENUE_MAP } from '../platform'
 import { CHANNELS } from '../genre'
@@ -19,18 +19,28 @@ const rows = (v: unknown): Rows => (Array.isArray(v) ? (v as Rows) : [])
 export function L0(projectId: string): string {
   const p = projects.get(projectId)!
   const st = stageStore.all(projectId)
-  const op = st['b4-operator'].data
+  const core = st['b9-core'].data
+  const hero = cast.list(projectId).find((c) => c.role === '主角')
   const bible = st['c6-bible'].data
   const power = st['c2-power'].data
   const lv = rows(power.levels)
 
   let out = `【L0 创作圣经】\n书名：${p.title}｜平台：${p.platform}\n`
-  out += line('规则差', op.diff || p.logline)
   out += line('一句话卖点', p.logline)
+  out += line('开场画面', core.scene)
 
-  const mains = projectRules.list(projectId)
-  if (mains.length)
-    out += `使用规则：${mains.map((r) => `${r.rule?.name}（${r.role}${r.operator ? `·${r.operator}` : ''}）`).join('，')}\n`
+  // 主角的欲望与阻碍是全书的发动机，每一次生成都要带
+  if (hero) {
+    out += `\n主角：${hero.cid} ${hero.name}\n`
+    out += line('  他要什么', hero.motive_surface || core.want)
+    out += line('  深层动机', hero.motive_deep)
+    out += line('  什么挡着他', core.block)
+    out += line('  软肋', hero.weakness)
+  } else {
+    out += line('他要什么', core.want)
+    out += line('什么挡着他', core.block)
+  }
+  out += line('靠什么撑长篇', core.longform)
 
   if (lv.length) {
     out += `\n力量等级表（名称｜资源门槛｜规则权限｜社会身份）：\n`
@@ -53,16 +63,11 @@ export function L0(projectId: string): string {
 /** L1 世界观状态 · 低频变化，摘要带入 */
 export function L1(projectId: string, volumeId?: string | null): string {
   const st = stageStore.all(projectId)
-  const civ = st['b6-civ'].data
   const bible = st['c6-bible'].data
   const res = st['c1-resource'].data
   const vol = volumeId ? volumes.list(projectId).find((v) => v.id === volumeId) : null
 
   let out = `\n【L1 世界观状态】\n`
-  const six = rows(civ.six)
-  if (six.length) out += `稳态六件套：\n${six.map((r) => `  ${r.k}：${r.v}`).join('\n')}\n`
-  out += line('新权力结构', civ.q3)
-  out += line('主线冲突', civ.q4)
 
   const core = rows(res.core)
   if (core.length)

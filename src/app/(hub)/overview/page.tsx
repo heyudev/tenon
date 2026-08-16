@@ -9,8 +9,6 @@ import { Chip, Eyebrow } from '@/components/ui'
 
 /** 系统全貌：一页看完这台机器由什么构成、怎么咬合 */
 export default function OverviewPage() {
-  const rules = assets.rules()
-  const edges = assets.edges()
   const craft = assets.craft()
   const books = projects.all()
 
@@ -40,9 +38,7 @@ export default function OverviewPage() {
           sub="跨书共享 · 一次建好，本本都用"
           hue={265}
           items={[
-            { t: '规则库', v: `${rules.length} 条`, d: '创意的搜索空间。两把正交的尺子：潜力★量天花板，可写性✍量地板', href: '/rulebase' },
-            { t: '概念图谱', v: `${assets.concepts().length} 点 / ${edges.length} 边`, d: '扰动传导与环路检测。正反馈过采样，推演时必须人工补刹车', href: '/graph' },
-            { t: '组合实验室', v: `${assets.labs().length} 个文明`, d: '规则相乘的示范 + 14 种核心资源的五要素', href: '/lab' },
+            { t: '核心资源参考', v: `${assets.resources().length} 种`, d: '五要素：产生源头 / 流动路径 / 沉淀形态 / 黑市形态 / 世界观类比' },
             { t: '阵地库', v: `${VENUES.length} 阵地 / ${Object.keys(OPERATORS).length} 运营商`, d: `${DIMENSIONS.length} 个维度的运营全景，会变的数值只标"你要去查什么"`, href: '/platforms' },
             { t: '方法论库', v: `${craft.length} 张卡`, d: '全是可执行判据：阈值 / 决策流程 / 失效模式', href: '/craft' },
             { t: '术语表', v: `${GLOSSARY.length} 条`, d: '这套系统的黑话。环节页会自动列出本环节出现过的词', href: '/glossary' },
@@ -58,7 +54,7 @@ export default function OverviewPage() {
           items={[
             { t: '环节', v: `${STAGES.length} 个`, d: `每个都答五件事：不做会死在哪里 / 怎么做 / 做到什么算够 / 常见错法 / 产出什么` },
             { t: '门禁', v: `${gateItems.length} 条`, d: `其中硬项 ${hardGates} 条、系统自动判定 ${autoGates} 条（判定器 ${Object.keys(CHECKS).length} 个）` },
-            { t: '最小可动笔集合', v: `${MIN_VIABLE.length} 项`, d: '这些齐了就能写第一章，不必等 50 个环节填完' },
+            { t: '最小可动笔集合', v: `${MIN_VIABLE.length} 项`, d: '这些齐了就能写第一章，不必等全部环节填完' },
             { t: '顺序主干', v: `${seq.length} 个`, d: '作者层（跨书资产池）与协议层（随时可触发）不参与排序，永不挡路' },
           ]}
         />
@@ -112,7 +108,7 @@ export default function OverviewPage() {
           ))}
         </div>
         <p className="mt-3 text-[12px] leading-relaxed text-[var(--text-faint)]">
-          举例：年代文（轻设定＋重人物）会裁掉力量体系、传导推演、文明推演；玄幻修仙（重成长＋重设定）一个都不裁。
+          举例：年代文（轻设定＋重人物）会裁掉力量体系、资源系统、历史时间线；玄幻修仙（重成长＋重设定）一个都不裁。
           <span className="text-[var(--text-dim)]">地图是全的，路是裁出来的。</span>
         </p>
       </section>

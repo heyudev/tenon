@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import type { Beat, Chapter, HookType, Thread, Volume } from '@/lib/types'
+import type { Venue } from '@/lib/platform'
 import type { StageViewProps } from './GenericStage'
 import StageFrame from '@/components/stage/StageFrame'
 import { addChapterRange, updateChapter } from '@/lib/actions'
@@ -22,17 +23,17 @@ export default function BeatStage({
   weight,
   autos,
   progress,
-  platform,
+  venue,
   vols,
   chapters,
   items,
-}: StageViewProps & { platform: string; vols: Volume[]; chapters: Chapter[]; items: Thread[] }) {
+}: StageViewProps & { venue: Venue; vols: Volume[]; chapters: Chapter[]; items: Thread[] }) {
   const [sel, setSel] = useState<number | null>(null)
   const [volId, setVolId] = useState<string>(vols[0]?.id ?? '')
   const [count, setCount] = useState(40)
 
-  /** 排期自检：最大间隔看的是「中爽及以上」之间隔了几章 */
-  const limit = platform === '番茄' ? 3 : 8
+  /** 排期自检：最大间隔看的是「中爽及以上」之间隔了几章。红线逐阵地不同，取阵地参数 */
+  const limit = venue.maxBeatGap
   const audit = useMemo(() => {
     const sorted = [...chapters].sort((a, b) => a.no - b.no)
     let gap = 0
@@ -100,7 +101,7 @@ export default function BeatStage({
               </div>
             )}
             <div className="mt-2 text-[12px] leading-relaxed text-[var(--text-faint)]">
-              {platform} 红线：连续 ≥{limit} 章无中爽及以上
+              {venue.name} 红线：连续 ≥{limit} 章无中爽及以上
             </div>
             {overGap && (
               <p className="mt-2 text-[12px] leading-relaxed text-[var(--accent)]">
@@ -144,9 +145,8 @@ export default function BeatStage({
           )}
 
           <p className="mt-4 text-[12px] leading-relaxed text-[var(--text-faint)]">
-            {platform === '番茄'
-              ? '番茄排期：每章一个微爽点，每 3 章一个中爽点，每 20-30 章一个卷级大爽点。'
-              : '起点排期：每 2-3 章一个中爽点，大爽点前允许 5-8 章蓄能，但蓄能期必须有进展感。'}
+            {venue.name} 排期：每章一个微爽点，每 {limit} 章内必须有一个中爽点，每 20-30 章一个卷级大爽点。
+            蓄能连续不得超过 {venue.tensionWindow} 章，且蓄能期必须有进展感。
           </p>
         </section>
       }

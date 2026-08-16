@@ -6,13 +6,14 @@ import {
   decisions,
   locks,
   metrics,
-  projectRules,
   projects,
   stageStore,
   threads,
   volumes,
 } from './repo'
 import { STAGES, STAGE_MAP, gateProgress } from './stages'
+import { autosOf } from './gate-ctx'
+import { venueOf } from './route'
 
 /**
  * 导出成 markdown 快照，写到仓库内的 export/<书名>/。
@@ -79,20 +80,22 @@ export function exportProject(projectId: string, outRoot?: string): { dir: strin
   const vols = volumes.list(projectId)
   const people = cast.list(projectId)
   const ths = threads.list(projectId)
-  const rules = projectRules.list(projectId)
   const words = chs.reduce((s, c) => s + c.words, 0)
   const stamp = new Date().toISOString().slice(0, 10)
 
   /* 导航 */
-  const passed = STAGES.filter((s) => gateProgress(s, states[s.id]?.gate ?? {}).passed)
+  // 必须带上自动判定，否则 42 条可判定项全部落到 pending，
+  // 导出的门禁状态会比应用里显示的低一截
+  const autos = autosOf(projectId)
+  const passed = STAGES.filter((s) => gateProgress(s, states[s.id]?.gate ?? {}, autos).passed)
   write(
     '00_导航.md',
-    fm({ type: 'moc', 书名: p.title, 平台: p.platform, 状态: p.status, 导出日期: stamp, 来源: '榫 Tenon' }) +
+    fm({ type: 'moc', 书名: p.title, 阵地: venueOf(p).name, 状态: p.status, 导出日期: stamp, 来源: '榫 Tenon' }) +
       `# ${p.title}\n\n> ${p.logline ?? '（卖点未定）'}\n\n` +
-      `**${p.platform}** · ${p.status} · ${vols.length} 卷 / ${chs.length} 章 / ${(words / 10000).toFixed(1)} 万字 · 门禁 ${passed.length}/21\n\n` +
+      `**${venueOf(p).name}** · ${p.status} · ${vols.length} 卷 / ${chs.length} 章 / ${(words / 10000).toFixed(1)} 万字 · 门禁 ${passed.length}/${STAGES.length}\n\n` +
       `## 管线状态\n\n| # | 环节 | 门禁 | 状态 |\n|---|---|---|---|\n` +
       STAGES.map((s) => {
-        const g = gateProgress(s, states[s.id]?.gate ?? {})
+        const g = gateProgress(s, states[s.id]?.gate ?? {}, autos)
         return `| ${s.no} | ${s.title} | ${g.done}/${g.total} | ${g.passed ? '✅ 已过' : g.hardLeft ? `🔴 硬项欠 ${g.hardLeft}` : '⏳'} |`
       }).join('\n') +
       `\n\n## 目录\n\n- [立项书](01_立项书.md)\n- [世界观圣经](02_世界观圣经.md)\n- [人物档案/](人物档案/)\n- [伏笔账本](伏笔账本/伏笔总账.md)\n- [卷结构/](卷结构/)\n- [章节记录/](章节记录/)\n- [正文/](正文/)\n`,
@@ -101,12 +104,7 @@ export function exportProject(projectId: string, outRoot?: string): { dir: strin
   /* 立项书（选题层 01-06） */
   let brief = fm({ type: 'doc', 书名: p.title, 导出日期: stamp }) + `# 立项书 ·《${p.title}》\n\n`
   brief += `**一句话卖点**：${p.logline ?? '（未定）'}\n\n`
-  if (rules.length) {
-    brief += `## 使用规则\n\n`
-    for (const r of rules)
-      brief += `### ${r.role}：${r.rule?.name}（#${r.rule_id}）\n\n- 现实规则：${r.rule?.real}\n- 改写方向：${r.rule?.change}\n- 改写算子：${r.operator ?? '未定'}\n- 本书改写：${r.rewritten ?? '（未写）'}\n- 潜力★${r.rule?.star} / 可写✍${r.rule?.writability}${r.rule?.embodiable ? ' / 可具身化' : ''}\n- 市场占用：${r.rule?.market}\n- 挂载概念：${r.rule?.concepts.join('·')}\n\n`
-  }
-  for (const id of ['b1-market', 'b4-operator', 'b5-graph', 'b6-civ', 'b7-concept']) {
+  for (const id of ['b1-market', 'b9-core', 'b7-concept']) {
     const body = fieldsToMd(id, states[id].data)
     if (body) brief += `## ${STAGE_MAP[id].no} ${STAGE_MAP[id].title}\n\n${body}`
   }
@@ -143,7 +141,7 @@ export function exportProject(projectId: string, outRoot?: string): { dir: strin
         `# ${c.name}（${c.cid}）\n\n` +
         (c.motive_surface ? `**表层动机**：${c.motive_surface}\n\n` : '') +
         (c.motive_deep ? `**深层动机**：${c.motive_deep}\n\n` : '') +
-        (c.attitude ? `**对规则的态度**：${c.attitude}\n\n` : '') +
+        (c.attitude ? `**处世态度**：${c.attitude}\n\n` : '') +
         `## 三件套\n\n- 欲望：${c.desire ?? '—'}\n- 软肋：${c.weakness ?? '—'}\n- 与主角的资源关系：${c.resource_rel ?? '—'}\n\n` +
         (c.secrets ? `## ⚠ 知道的秘密\n\n${c.secrets}\n\n` : '') +
         (c.tic ? `**口癖**：${c.tic}\n\n` : '') +

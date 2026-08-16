@@ -2,16 +2,11 @@ import { db, j, now, rid } from './db'
 import type {
   Chapter,
   Character,
-  Concept,
   CraftCard,
   Decision,
-  Edge,
-  Lab,
   Metric,
   Project,
-  ProjectRule,
   Resource,
-  Rule,
   StageState,
   Thread,
   Volume,
@@ -20,53 +15,9 @@ import { STAGES } from './stages'
 
 /* ══════════ 资产层 ══════════ */
 
-type RuleRow = Record<string, string | number | null>
-
-function toRule(r: RuleRow): Rule {
-  return {
-    id: r.id as number,
-    name: r.name as string,
-    domain: r.domain as string,
-    real: r.real as string,
-    change: r.change as string,
-    hook: r.hook as string | null,
-    scene: r.scene as string | null,
-    star: r.star as number,
-    writability: r.writability as number,
-    embodiable: !!r.embodiable,
-    market: r.market as Rule['market'],
-    market_used: r.market_used as string | null,
-    market_gap: r.market_gap as string | null,
-    tags: [!!r.b_quant, !!r.b_scarce, !!r.b_compete, !!r.b_cost, !!r.b_universal],
-    concepts: j.parse<string[]>(r.concepts as string, []),
-    micro: j.parse<string[]>(r.micro as string, []),
-    deep: r.deep ? j.parse<Rule['deep']>(r.deep as string, null) : null,
-    field_notes: r.field_notes as string | null,
-  }
-}
-
 export const assets = {
-  rules(): Rule[] {
-    return (db().prepare('SELECT * FROM rules ORDER BY id').all() as RuleRow[]).map(toRule)
-  },
-  rule(id: number): Rule | null {
-    const r = db().prepare('SELECT * FROM rules WHERE id = ?').get(id) as RuleRow | undefined
-    return r ? toRule(r) : null
-  },
-  concepts(): Concept[] {
-    return db().prepare('SELECT * FROM concepts').all() as Concept[]
-  },
-  edges(): Edge[] {
-    return db().prepare('SELECT * FROM edges').all() as Edge[]
-  },
   resources(): Resource[] {
     return db().prepare('SELECT * FROM resources').all() as Resource[]
-  },
-  domains(): { name: string; tip: string }[] {
-    return db().prepare('SELECT * FROM domains').all() as { name: string; tip: string }[]
-  },
-  labs(): Lab[] {
-    return db().prepare('SELECT * FROM labs ORDER BY id').all() as Lab[]
   },
   craft(): CraftCard[] {
     return db().prepare('SELECT * FROM craft_cards ORDER BY ord').all() as CraftCard[]
@@ -77,20 +28,6 @@ export const assets = {
     return db()
       .prepare(`SELECT * FROM craft_cards WHERE id IN (${q}) ORDER BY ord`)
       .all(...ids) as CraftCard[]
-  },
-  setMarket(id: number, market: string, used: string, gap: string) {
-    db()
-      .prepare('UPDATE rules SET market=?, market_used=?, market_gap=? WHERE id=?')
-      .run(market, used || null, gap || null, id)
-  },
-  appendFieldNote(id: number, note: string) {
-    const cur = (db().prepare('SELECT field_notes FROM rules WHERE id=?').get(id) as { field_notes: string | null })?.field_notes
-    db().prepare('UPDATE rules SET field_notes=? WHERE id=?').run(cur ? `${cur}\n${note}` : note, id)
-  },
-  addEdge(e: Omit<Edge, 'id'>) {
-    db()
-      .prepare('INSERT INTO edges(src,dst,strength,direction,feedback,mechanism,origin) VALUES(?,?,?,?,?,?,?)')
-      .run(e.src, e.dst, e.strength, e.direction, e.feedback, e.mechanism, e.origin || '补充')
   },
 }
 
@@ -185,38 +122,26 @@ export const stageStore = {
   },
 }
 
-/* ══════════ 本书选用的规则 ══════════ */
-
-export const projectRules = {
-  list(projectId: string): ProjectRule[] {
-    const rows = db()
-      .prepare('SELECT * FROM project_rules WHERE project_id=?')
-      .all(projectId) as ProjectRule[]
-    return rows.map((r) => ({ ...r, rule: assets.rule(r.rule_id) ?? undefined }))
-  },
-  add(projectId: string, ruleId: number, role: string) {
-    db()
-      .prepare(
-        'INSERT OR IGNORE INTO project_rules(project_id,rule_id,role) VALUES(?,?,?)',
-      )
-      .run(projectId, ruleId, role)
-    projects.touch(projectId)
-  },
-  update(projectId: string, ruleId: number, patch: Partial<ProjectRule>) {
-    const sets: string[] = []
-    const vals: unknown[] = []
-    for (const c of ['role', 'operator', 'rewritten', 'note'] as const)
-      if (c in patch) {
-        sets.push(`${c}=?`)
-        vals.push(patch[c] ?? null)
-      }
-    if (!sets.length) return
-    vals.push(projectId, ruleId)
-    db().prepare(`UPDATE project_rules SET ${sets.join(',')} WHERE project_id=? AND rule_id=?`).run(...vals)
-  },
-  remove(projectId: string, ruleId: number) {
-    db().prepare('DELETE FROM project_rules WHERE project_id=? AND rule_id=?').run(projectId, ruleId)
-  },
+/**
+ * 下一个可用序号 = 现存记录的最大序号 + 1。
+ *
+ * 不能用 COUNT(*)+1：删掉中间任意一条就会与现存记录撞号，而 FS-xxx / C-xxx 是
+ * chapters.plant / harvest 里以**文本**形式引用的，撞号会让伏笔账本静默对错账。
+ * 导入进来的编号不一定是本系统的格式（import.mjs 会原样保留源文件里的伏笔编号），
+ * 所以只抓末尾数字，抓不到的就当没有序号忽略掉。
+ *
+ * table / col 是调用点写死的常量，不来自外部输入。
+ */
+function nextSeq(table: string, col: string, projectId: string): number {
+  const rows = db()
+    .prepare(`SELECT ${col} AS v FROM ${table} WHERE project_id=?`)
+    .all(projectId) as { v: string | number | null }[]
+  let max = 0
+  for (const r of rows) {
+    const m = /(\d+)\s*$/.exec(String(r.v ?? ''))
+    if (m) max = Math.max(max, Number(m[1]))
+  }
+  return max + 1
 }
 
 /* ══════════ 人物 ══════════ */
@@ -231,8 +156,7 @@ export const cast = {
     return rows.map((r) => ({ ...r, aliases: j.parse<string[]>(r.aliases, []) }))
   },
   nextCid(projectId: string): string {
-    const n = (db().prepare('SELECT COUNT(*) c FROM characters WHERE project_id=?').get(projectId) as { c: number }).c
-    return `C-${String(n + 1).padStart(3, '0')}`
+    return `C-${String(nextSeq('characters', 'cid', projectId)).padStart(3, '0')}`
   },
   create(projectId: string, name: string, role: string): string {
     const id = rid('c')
@@ -284,10 +208,10 @@ export const threads = {
   },
   create(projectId: string, content: string, level: string): string {
     const id = rid('t')
-    const n = (db().prepare('SELECT COUNT(*) c FROM threads WHERE project_id=?').get(projectId) as { c: number }).c
+    const n = nextSeq('threads', 'fid', projectId)
     db()
       .prepare('INSERT INTO threads(id,project_id,fid,content,level,updated_at) VALUES(?,?,?,?,?,?)')
-      .run(id, projectId, `FS-${String(n + 1).padStart(3, '0')}`, content, level, now())
+      .run(id, projectId, `FS-${String(n).padStart(3, '0')}`, content, level, now())
     projects.touch(projectId)
     return id
   },
@@ -322,7 +246,8 @@ export const volumes = {
   },
   create(projectId: string, title: string): string {
     const id = rid('v')
-    const n = (db().prepare('SELECT COUNT(*) c FROM volumes WHERE project_id=?').get(projectId) as { c: number }).c + 1
+    // 卷号同时是排序键（ORDER BY no），撞号会让卷的顺序变得不确定
+    const n = nextSeq('volumes', 'no', projectId)
     db()
       .prepare('INSERT INTO volumes(id,project_id,vid,no,title,updated_at) VALUES(?,?,?,?,?,?)')
       .run(id, projectId, `V-${String(n).padStart(2, '0')}`, n, title, now())

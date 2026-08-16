@@ -6,7 +6,7 @@
 //
 // 判定结果三态：通过 / 不通过 / 数据不足（还没填到能判的程度，不算不通过）。
 
-import type { Chapter, Character, Metric, Project, ProjectRule, Thread, Volume } from './types'
+import type { Chapter, Character, Metric, Project, Thread, Volume } from './types'
 import { VENUE_MAP, type Venue } from './platform'
 
 export interface CheckCtx {
@@ -17,7 +17,6 @@ export interface CheckCtx {
   threads: Thread[]
   cast: Character[]
   volumes: Volume[]
-  rules: ProjectRule[]
   metrics: Metric[]
 }
 
@@ -47,60 +46,6 @@ export const CHECKS: Record<string, Check> = {
     c.project.genre
       ? ok(`已定：${c.project.platform} · ${c.project.channel} · 类型已选`)
       : no('类型还没选。类型决定这本书走哪条路线，不定就没法裁剪必经环节'),
-
-  'rules-market': (c) => {
-    if (!c.rules.length) return null
-    const bad = c.rules.filter((r) => r.rule?.market === '未评估')
-    return bad.length
-      ? no(`${bad.map((r) => r.rule?.name).join('、')} 还是「未评估」——未评估不等于安全，只等于没查过`)
-      : ok(`${c.rules.length} 条规则的市场占用都已评估`)
-  },
-
-  'rules-count': (c) => {
-    if (!c.rules.length) return null
-    const main = c.rules.filter((r) => r.role === '主规则').length
-    const aux = c.rules.length - main
-    if (main !== 1) return no(`主规则 ${main} 条。只能有 1 条——双主规则＝两本书硬挤一本，理解门槛翻倍`)
-    if (aux > 2) return no(`辅规则 ${aux} 条，超过 2 条。3 条以上就是事故现场`)
-    return ok(`主规则 1 条，辅规则 ${aux} 条`)
-  },
-
-  'rules-embodiable': (c) => {
-    if (!c.rules.length) return null
-    return c.rules.some((r) => r.rule?.embodiable)
-      ? ok('整组有可具身化的规则，主角手里有能握住的东西')
-      : no('整组没有一条可具身化——主角手里没有能握住的东西，第一章会落不了笔')
-  },
-
-  'operator-one': (c) => {
-    const main = c.rules.find((r) => r.role === '主规则')
-    if (!main) return null
-    return main.operator ? ok(`主规则用了「${main.operator}」`) : no('主规则还没定改写算子')
-  },
-
-  'diff-oneline': (c) => {
-    const d = str(c.data['b4-operator']?.diff)
-    if (!d) return no('规则差还没写成一句话')
-    return d.length > 80 ? no(`${d.length} 字，太长了。一句话说不清，读者就复述不了`) : ok(`${d.length} 字，能一句话说清`)
-  },
-
-  'loop-brake': (c) => {
-    const pos = str(c.data['b5-graph']?.loop_pos)
-    const neg = str(c.data['b5-graph']?.loop_neg)
-    if (!pos) return null
-    return neg
-      ? ok('正反馈环配了刹车')
-      : no('只有正反馈环没有负反馈环——任何扰动都会指数发散，世界三卷内必崩')
-  },
-
-  'six-black': (c) => {
-    const six = rows(c.data['b6-civ']?.six)
-    if (!six.length) return null
-    const black = six.find((r) => /黑市/.test(r.k ?? ''))
-    return black?.v
-      ? ok('黑市写得出来，稀缺性与代价设计站得住')
-      : no('六件套里没有黑市——没有黑市的架空文明一定是假的，说明稀缺性或代价设计有问题')
-  },
 
   'score-14': (c) => {
     const m = nums(c.data['b7-concept']?.score)
@@ -212,7 +157,7 @@ export const CHECKS: Record<string, Check> = {
     if (!hero) return null
     return hero.stance
       ? ok(`主角站位：${hero.stance}`)
-      : no('主角还没定站位。例外者／套利者／执法者三选一，这决定天然剧情与代入方式')
+      : no('主角还没定他与阻碍的关系。这决定了天然剧情与代入方式')
   },
 
   'hero-motive': (c) => {

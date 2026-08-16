@@ -8,7 +8,7 @@ import { addCharacter, removeCharacter, updateCharacter } from '@/lib/actions'
 import { Button, Chip, Eyebrow, cx } from '@/components/ui'
 
 const ROLES = ['主角', '核心配角', '反派', '路人脸']
-const STANCES = ['例外者', '套利者', '执法者']
+const STANCES = ['局外人', '内行人', '执行者']
 const ATTITUDES = ['敬畏', '戏耍', '憎恨', '利用']
 const STATUS = ['活跃', '重伤', '突破', '结盟', '死亡', '失踪', '废弃']
 
@@ -142,13 +142,13 @@ export default function CastStage({
               {cur.role === '主角' && (
                 <>
                   <Pills
-                    label="规则站位（三选一，必须与规则差结构性绑定）"
+                    label="他与阻碍的关系"
                     options={STANCES}
                     value={cur.stance ?? ''}
                     onPick={(v) => updateCharacter(projectId, cur.id, { stance: v })}
                   />
                   <Pills
-                    label="对规则的态度（人物弧光的坐标轴）"
+                    label="处世态度（人物弧光的坐标轴）"
                     options={ATTITUDES}
                     value={cur.attitude ?? ''}
                     onPick={(v) => updateCharacter(projectId, cur.id, { attitude: v })}
@@ -206,7 +206,7 @@ export default function CastStage({
 
               {cur.role === '主角' && !cur.stance && (
                 <div className="rounded-[2px] border border-[var(--accent)]/30 bg-[var(--accent)]/6 px-3.5 py-2.5 text-[14px] leading-relaxed text-[var(--accent)]">
-                  主角还没定站位。三种站位对应完全不同的天然剧情与平台倾向：例外者（番茄·金手指直给）/ 套利者（双平台通吃）/ 执法者（起点·权谋纵深）。
+                  主角还没定站位。三种站位对应完全不同的天然剧情：局外人（隐藏身份、被追捕、揭示身世）/ 内行人（信息差碾压、商战、打脸）/ 执行者（破案、清算、权力斗争）。
                 </div>
               )}
             </div>

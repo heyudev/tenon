@@ -5,8 +5,7 @@ import {
   chapters,
   decisions,
   locks,
-  metrics,
-  projectRules,
+  metrics,
   projects,
   stageStore,
   threads,
@@ -33,7 +32,6 @@ export default async function ProjectOverview({ params }: { params: Promise<{ id
   const ths = threads.list(id)
   const people = cast.list(id)
   const words = chs.reduce((s, c) => s + c.words, 0)
-  const rules = projectRules.list(id)
   const dec = decisions.list(id)
   const lk = locks.list(id)
   const ms = metrics.list(id)
@@ -82,9 +80,8 @@ export default async function ProjectOverview({ params }: { params: Promise<{ id
       {/* 真相源 */}
       <section className="mt-10">
         <Eyebrow>真相源</Eyebrow>
-        <div className="mt-3 grid grid-cols-5 gap-px overflow-hidden border border-[var(--line-soft)] bg-[var(--line-soft)]">
+        <div className="mt-3 grid grid-cols-4 gap-px overflow-hidden border border-[var(--line-soft)] bg-[var(--line-soft)]">
           {[
-            { k: '规则', v: rules.length, s: rules.map((r) => r.rule?.name).filter(Boolean).join(' · ') || '未选', href: `/p/${id}/s/b3-rules` },
             { k: '人物', v: people.length, s: `主角 ${people.filter((x) => x.role === '主角').length} · 反派 ${people.filter((x) => x.role === '反派').length}`, href: `/p/${id}/s/d1-hero` },
             { k: '伏笔', v: ths.length, s: `未收 ${ths.filter((t) => t.status === '已埋设' || t.status === '已强化').length}${overdue.length ? ` · 逾期 ${overdue.length}` : ''}`, href: `/p/${id}/s/f3-threads` },
             {

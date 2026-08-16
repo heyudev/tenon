@@ -1,11 +1,9 @@
 import { notFound } from 'next/navigation'
 import { STAGE_MAP, STAGES, gateProgress, isSequential } from '@/lib/stages'
-import { weightsOf } from '@/lib/route'
+import { venueOf, weightsOf } from '@/lib/route'
 import { autosOf } from '@/lib/gate-ctx'
-import { assets, cast, chapters, metrics, projectRules, projects, stageStore, threads, volumes } from '@/lib/repo'
+import { assets, cast, chapters, metrics, projects, stageStore, threads, volumes } from '@/lib/repo'
 import GenericStage from './views/GenericStage'
-import RulePickStage from './views/RulePickStage'
-import GraphStage from './views/GraphStage'
 import CastStage from './views/CastStage'
 import VolumeStage from './views/VolumeStage'
 import ThreadStage from './views/ThreadStage'
@@ -43,10 +41,6 @@ export default async function StagePage({
   const common = { stage, projectId: id, state, cards, weight: weights[stageId], autos, progress }
 
   switch (stage.view) {
-    case 'rules':
-      return <RulePickStage {...common} rules={assets.rules()} picked={projectRules.list(id)} />
-    case 'graph':
-      return <GraphStage {...common} picked={projectRules.list(id)} edges={assets.edges()} />
     case 'cast':
       return <CastStage {...common} people={cast.list(id)} />
     case 'volumes':
@@ -57,7 +51,7 @@ export default async function StagePage({
       return (
         <BeatStage
           {...common}
-          platform={p.platform}
+          venue={venueOf(p)}
           vols={volumes.list(id)}
           chapters={chapters.list(id)}
           items={threads.list(id)}
@@ -68,7 +62,7 @@ export default async function StagePage({
     case 'resources':
       return <ResourceStage {...common} refs={assets.resources()} />
     case 'metrics':
-      return <MetricStage {...common} platform={p.platform} chapters={chapters.list(id)} rows={metrics.list(id)} />
+      return <MetricStage {...common} venue={venueOf(p)} chapters={chapters.list(id)} rows={metrics.list(id)} />
     case 'write':
       return <WriteRedirect projectId={id} stage={stage} />
     default:

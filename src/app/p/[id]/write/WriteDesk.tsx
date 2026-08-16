@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { Chapter, Character, HookType, Project, Thread, Volume } from '@/lib/types'
 import type { GateItem } from '@/lib/stages'
 import { addChapter, updateChapter, updateThread } from '@/lib/actions'
+import { venueOf } from '@/lib/route'
 import { AiOutput, useAiRun } from '@/components/AiPanel'
 import { Button, Check, Chip, Empty, Eyebrow, Meter, Segmented, cx } from '@/components/ui'
 import Autopilot from './Autopilot'
@@ -56,7 +57,9 @@ export default function WriteDesk({
     setReview(cur?.review ?? '')
   }, [curId, cur?.body, cur?.review])
 
-  const range = project.platform === '起点' ? [3000, 4500] : [2000, 3000]
+  // 字数区间是阵地参数，不要在这里另立一套二值判断
+  const venue = venueOf(project)
+  const range = venue.words
   const chars = body.length
   const inRange = chars >= range[0] && chars <= range[1]
 
@@ -222,7 +225,7 @@ export default function WriteDesk({
                     <div className="mb-1.5 flex items-baseline gap-2">
                       <span className="text-[14px] font-medium">爽点节拍</span>
                       <span className="text-[12px] text-[var(--text-faint)]">
-                        {project.platform === '番茄' ? '番茄：每章至少一个微爽点' : '起点：每 2-3 章一个中爽点'}
+                        {venue.name}：每 {venue.maxBeatGap} 章内必须有一个中爽及以上
                       </span>
                     </div>
                     <div className="flex gap-1.5">
@@ -327,9 +330,8 @@ export default function WriteDesk({
                     <span className="num text-[14px]" style={{ color: inRange ? 'var(--color-celadon)' : 'var(--accent)' }}>
                       {chars} 字
                     </span>
-                    <span className="text-[12px] text-[var(--text-faint)]">
-                      {project.platform} 区间 {range[0]}–{range[1]}
-                      {project.platform === '起点' && '（含标点的总字数口径）'}
+                    <span className="text-[12px] text-[var(--text-faint)]" title={venue.wordsNote}>
+                      {venue.name} 区间 {range[0]}–{range[1]}
                     </span>
                     <div className="w-[120px]">
                       <Meter value={Math.min(chars, range[1])} max={range[1]} tone={inRange ? 'good' : 'accent'} />
@@ -519,7 +521,7 @@ export default function WriteDesk({
           <section className="mt-7">
             <Eyebrow>注入的上下文</Eyebrow>
             <div className="mt-2 space-y-1 text-[12px] leading-relaxed text-[var(--text-faint)]">
-              <div>L0 创作圣经 · 规则差 / 等级表 / 文风样例 / 禁忌</div>
+              <div>L0 创作圣经 · 卖点 / 主角欲望与阻碍 / 文风样例 / 禁忌</div>
               <div>L1 世界观 · 六件套 / 势力 / 术语 / 当前卷</div>
               <div>L2 人物 · 勾选的 {cur.cast.length} 人（含"知道什么秘密"）</div>
               <div>L3 游标 · 近 3 章摘要 / 未兑现钩子 / 进行中伏笔</div>

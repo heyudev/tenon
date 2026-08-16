@@ -17,7 +17,7 @@ AI 小说创作系统。Next.js 15 (App Router) + TypeScript + Tailwind v4 + bet
 
 ```bash
 npm run dev          # 开发（固定 3100，避开常被占用的 3000）
-npm run seed         # 重建资产层（保留规则的实战记录、人工补的边、全部项目数据）
+npm run seed         # 重建资产层（方法论卡片 + 核心资源参考；不碰任何项目数据）
 npm run import -- "<目录>" [--dry]   # 从一个 markdown 小说项目提取成一本书
 npm run typecheck    # tsc --noEmit
 npm run build        # 生产构建
@@ -31,7 +31,9 @@ npm run build        # 生产构建
 ```
 src/lib/
   schema.sql     数据库结构：资产层（跨书共享）+ 项目层（每本书自包含）
-  stages.ts      ★ 系统脊柱：21 个环节的声明式定义（字段/门禁/方法论/AI 动作）。纯数据，客户端服务端共用
+  stages.ts      ★ 系统脊柱：46 个环节的声明式定义（字段/门禁/方法论/AI 动作）。纯数据，客户端服务端共用
+  checks.ts      门禁的可判定项：从库里算，三态（过/不过/数据不足）。gate-ctx.ts 是它的装配入口
+  platform.ts    阵地全景（运营商 × 频道）；genre.ts 类型与频道契约；route.ts 按阵地×类型裁剪必经环节
   repo.ts        数据访问，服务端专用（引它的文件不能是 'use client'）
   actions.ts     server actions
   export.ts      导出成 markdown
@@ -40,17 +42,19 @@ src/lib/
     memory.ts    分层记忆 L0–L4 装配
     prompts.ts   角色系统提示词 + 每个环节/流水线角色的提示词构造
 src/app/
-  (hub)/         资产层页面：规则库 / 图谱 / 组合实验室 / 方法论库 / 设置
+  (hub)/         资产层页面：方法论库 / 阵地库 / 术语表 / 系统全貌 / 设置
   p/[id]/        项目工作区：总览 / s/[stage] 环节 / write 日更台
   api/ai         SSE 流式 AI 调用；api/export 导出
 src/components/
   ui.tsx         设计原语；md.tsx 零依赖 markdown；stage/ 环节骨架与字段渲染
 scripts/
   seed.mjs       资产层导入（只读 seed/assets.json）
-  craft.mjs      方法论卡片：43 条可执行判据
+  craft.mjs      方法论卡片：43 张（craft-extend.mjs 另有 16 张，合计 59，seed 时两份一起入库）
   import.mjs     从一个 markdown 小说项目目录提取成一本书
 seed/
-  assets.json    资产层种子：规则/概念/因果边/资源流/示范文明。系统自有 schema
+  assets.json    资产层种子：核心资源五要素。系统自有 schema
+archive/
+  rule-engine-snapshot.json   规则引擎退役前的快照（400 规则 / 105 因果边）。留底用，seed 不读它
 ```
 
 ## 加环节 / 改环节
@@ -106,7 +110,7 @@ seed/
 - 选中态是「坐进槽里」不是「浮起来」：`Segmented` 的滑块用 `inset` 描边，不用投影。
 - `prefers-reduced-motion` 下全局把 transition 压到 0.01ms，别单独再写一份。
 
-**两栏页的骨架**（规则库 / 图谱 / 组合实验室 / 方法论库都是这个形）
+**两栏页的骨架**（方法论库 / 阵地库 / 术语表都是这个形）
 
 ```
 <div className="flex h-full flex-col">            ← 不要 h-dvh，外层 main 已经定高
@@ -151,4 +155,4 @@ seed/
 
 `data/tenon.db`（gitignore）。资产层用 `npm run seed` 幂等重建，种子在 `seed/assets.json`；
 项目层是用户数据，只由应用与 `import.mjs` 写入。
-`npm run seed` 会保留：规则的 `field_notes`（实战记录）、`edges` 里 `origin='补充'` 的人工边。
+`npm run seed` 只覆盖资产层两张表（`resources` / `craft_cards`），不碰任何项目数据。

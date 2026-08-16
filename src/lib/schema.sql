@@ -9,56 +9,6 @@ PRAGMA foreign_keys = ON;
 -- 资产层 · 跨书共享的引擎库存
 -- ════════════════════════════════════════════════════════════════
 
--- 400 条文明规则：搜索空间本体
-CREATE TABLE IF NOT EXISTS rules (
-  id          INTEGER PRIMARY KEY,
-  name        TEXT NOT NULL UNIQUE,
-  domain      TEXT NOT NULL,
-  real        TEXT NOT NULL,          -- 现实中如何成立
-  change      TEXT NOT NULL,          -- 可以如何改写
-  hook        TEXT,                   -- 一句话爽点（结局原型）
-  scene       TEXT,                   -- 最小可写场景（开场切口）
-  star        INTEGER NOT NULL DEFAULT 0,  -- 番茄适配★ = 世界观潜力
-  writability INTEGER NOT NULL DEFAULT 0,  -- 可写性✍ = 第一章能否落笔
-  embodiable  INTEGER NOT NULL DEFAULT 0,  -- 可具身化：能否握在手里
-  market      TEXT NOT NULL DEFAULT '未评估', -- 空白/零星/密集/红海/未评估
-  market_used TEXT,                   -- 已被写过
-  market_gap  TEXT,                   -- 留白方向
-  b_quant     INTEGER NOT NULL DEFAULT 0,  -- 可量化
-  b_scarce    INTEGER NOT NULL DEFAULT 0,  -- 稀缺
-  b_compete   INTEGER NOT NULL DEFAULT 0,  -- 可竞争
-  b_cost      INTEGER NOT NULL DEFAULT 0,  -- 有代价
-  b_universal INTEGER NOT NULL DEFAULT 0,  -- 影响所有人
-  concepts    TEXT NOT NULL DEFAULT '[]', -- json: 挂载概念名
-  micro       TEXT NOT NULL DEFAULT '[]', -- json: [催生行业, 谁获利, 谁受损, 新权力, 最激烈冲突]
-  deep        TEXT,                   -- json: {q1..q5, story} 五问深度推演
-  field_notes TEXT                    -- 实战记录（用过之后回流）
-);
-CREATE INDEX IF NOT EXISTS idx_rules_star ON rules(star);
-CREATE INDEX IF NOT EXISTS idx_rules_w ON rules(writability);
-CREATE INDEX IF NOT EXISTS idx_rules_domain ON rules(domain);
-
--- 43 个概念节点：文明的基本变量
-CREATE TABLE IF NOT EXISTS concepts (
-  name TEXT PRIMARY KEY,
-  cat  TEXT NOT NULL,   -- 物理基座/生理基座/经济资源/社会资源/信息资源/制度结构
-  desc TEXT
-);
-
--- 105 条因果边：扰动的传导路径
-CREATE TABLE IF NOT EXISTS edges (
-  id        INTEGER PRIMARY KEY AUTOINCREMENT,
-  src       TEXT NOT NULL,
-  dst       TEXT NOT NULL,
-  strength  TEXT NOT NULL,   -- 强/弱
-  direction TEXT NOT NULL,   -- 单向/双向
-  feedback  TEXT NOT NULL,   -- 正/负/中
-  mechanism TEXT,
-  origin    TEXT NOT NULL DEFAULT '原库'  -- 原库 / 补充（人工补的负反馈刹车）
-);
-CREATE INDEX IF NOT EXISTS idx_edges_src ON edges(src);
-CREATE INDEX IF NOT EXISTS idx_edges_dst ON edges(dst);
-
 -- 14 种核心资源的五要素
 CREATE TABLE IF NOT EXISTS resources (
   name    TEXT PRIMARY KEY,
@@ -67,20 +17,6 @@ CREATE TABLE IF NOT EXISTS resources (
   sink    TEXT,  -- 沉淀形态
   black   TEXT,  -- 黑市形态
   analogy TEXT   -- 世界观类比
-);
-
--- 22 个领域的创作定位
-CREATE TABLE IF NOT EXISTS domains (
-  name TEXT PRIMARY KEY,
-  tip  TEXT
-);
-
--- 组合实验室：预生成的示范文明
-CREATE TABLE IF NOT EXISTS labs (
-  id    INTEGER PRIMARY KEY AUTOINCREMENT,
-  combo TEXT NOT NULL,
-  name  TEXT NOT NULL,
-  core  TEXT, law TEXT, biz TEXT, black TEXT, war TEXT, hook TEXT
 );
 
 -- 知识库卡片：技法 / 平台约束 / 检查清单 / 毒点红线（来自两个框架的方法论层）
@@ -113,7 +49,7 @@ CREATE TABLE IF NOT EXISTS projects (
   updated_at TEXT NOT NULL
 );
 
--- 环节产出物：21 个环节的通用存储（声明式 stage 引擎的落盘）
+-- 环节产出物：全部环节的通用存储（声明式 stage 引擎的落盘，环节表见 lib/stages.ts）
 CREATE TABLE IF NOT EXISTS stage_states (
   project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   stage_id   TEXT NOT NULL,
@@ -124,18 +60,10 @@ CREATE TABLE IF NOT EXISTS stage_states (
   PRIMARY KEY (project_id, stage_id)
 );
 
--- 本书选用的规则（含改写算子）
-CREATE TABLE IF NOT EXISTS project_rules (
-  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  rule_id    INTEGER NOT NULL REFERENCES rules(id),
-  role       TEXT NOT NULL DEFAULT '主规则',   -- 主规则/辅规则
-  operator   TEXT,                             -- 反转/量化/交易化/垄断化/隐藏化
-  rewritten  TEXT,                             -- 改写后的一句话
-  note       TEXT,
-  PRIMARY KEY (project_id, rule_id)
-);
-
 -- 人物档案（ID 规范 C-xxx）
+-- cid / fid / vid 的编号由 repo.ts 的 nextSeq() 保证（现存最大序号 +1，不是 COUNT+1）。
+-- 这里没有下 UNIQUE 约束：本文件在每次开库时 exec，若历史库里已存在重复编号，
+-- 建唯一索引会直接让应用起不来；而自动重编号会破坏 chapters.plant/harvest 里的文本引用。
 CREATE TABLE IF NOT EXISTS characters (
   id             TEXT PRIMARY KEY,
   project_id     TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -143,7 +71,7 @@ CREATE TABLE IF NOT EXISTS characters (
   name           TEXT NOT NULL,
   aliases        TEXT NOT NULL DEFAULT '[]',
   role           TEXT NOT NULL DEFAULT '配角',  -- 主角/核心配角/反派/路人脸
-  stance         TEXT,                   -- 主角对规则的站位：例外者/套利者/执法者
+  stance         TEXT,                   -- 主角与压着他的那套结构的关系：局外人/内行人/执行者
   faction        TEXT,
   motive_surface TEXT,                   -- 表层动机（小、具体）
   motive_deep    TEXT,                   -- 深层动机（中期觉醒）

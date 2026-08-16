@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import type { Project } from '@/lib/types'
 import { deleteProject, updateProject } from '@/lib/actions'
-import { Button, cx } from '@/components/ui'
+import { VENUES, VENUE_MAP } from '@/lib/platform'
+import { venueOf } from '@/lib/route'
+import { Button } from '@/components/ui'
 
 const STATUS = ['立项中', '构建中', '连载中', '完结', '冻结']
 
@@ -30,22 +32,23 @@ export default function ProjectHeader({ project: p }: { project: Project }) {
           onBlur={(e) => updateProject(p.id, { title: e.target.value })}
           className="min-w-0 flex-1 bg-transparent text-[26px] font-light tracking-tight outline-none"
         />
-        <div className="flex flex-none gap-1">
-          {(['番茄', '起点'] as const).map((pl) => (
-            <button
-              key={pl}
-              onClick={() => updateProject(p.id, { platform: pl })}
-              className={cx(
-                'rounded-[2px] border px-2 py-[3px] text-[12px] transition-colors',
-                p.platform === pl
-                  ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
-                  : 'border-[var(--line)] text-[var(--text-faint)]',
-              )}
-            >
-              {pl}
-            </button>
+        {/* 阵地是真相源：字数区间、爽点红线、健康线、提示词分支全从它派生。
+            platform/channel 只是它的派生展示字段，必须一起写，不能单独改 */}
+        <select
+          value={venueOf(p).id}
+          onChange={(e) => {
+            const v = VENUE_MAP[e.target.value]
+            if (v) updateProject(p.id, { venue: v.id, platform: v.operator, channel: v.channel })
+          }}
+          className="h-8 flex-none cursor-pointer rounded-[2px] border border-[var(--line)] bg-transparent px-2 text-[12px]"
+          title="发布阵地 —— 换阵地会同时换掉字数区间、爽点红线与健康线"
+        >
+          {VENUES.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.name}
+            </option>
           ))}
-        </div>
+        </select>
         <select
           defaultValue={p.status}
           onChange={(e) => updateProject(p.id, { status: e.target.value })}

@@ -13,10 +13,8 @@ export default async function SettingsPage() {
       current={currentProvider()}
       models={Object.fromEntries(PROVIDERS.map((p) => [p.id, currentModel(p.id)]))}
       counts={{
-        rules: assets.rules().length,
-        concepts: assets.concepts().length,
-        edges: assets.edges().length,
         craft: assets.craft().length,
+        resources: assets.resources().length,
       }}
     />
   )

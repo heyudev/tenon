@@ -60,7 +60,7 @@ export default function Glossary({ terms }: { terms: Term[] }) {
       <div className="mt-8">
         <Eyebrow>看不懂还可以去</Eyebrow>
         <p className="mt-1.5 text-[14px] text-[var(--text-dim)]">
-          方法论库（每条判据的完整说明）· 阵地库（平台黑话）· 规则库（规则与概念本身）
+          方法论库（每条判据的完整说明）· 阵地库（平台黑话）
         </p>
       </div>
     </div>

@@ -9,7 +9,7 @@ import { Chip, Eyebrow } from '@/components/ui'
 
 /**
  * 引导模式：一次只回答一个问题——**我现在该做什么**。
- * 50 个环节摊开会劝退；这里按依赖与路线算出下一步，并说清为什么是它。
+ * 全部环节摊开会劝退；这里按依赖与路线算出下一步，并说清为什么是它。
  */
 export default async function GuidePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -164,7 +164,7 @@ export default async function GuidePage({ params }: { params: Promise<{ id: stri
         <div className="mt-4 border border-[var(--color-celadon)]/35 bg-[var(--color-celadon)]/5 px-5 py-4">
           <div className="text-[14px] font-medium">最小可动笔集合已齐</div>
           <p className="mt-1.5 text-[14px] leading-relaxed text-[var(--text-dim)]">
-            类型契约、规则差、卖点、金手指、主角、视角、文风都定了——现在就可以写第一章。
+            类型契约、核心创意、卖点、金手指、主角、视角、文风都定了——现在就可以写第一章。
             剩下的环节可以边写边补，开篇试水的结果反过来还会改设定。
           </p>
           <Link href={`/p/${id}/s/e4-opening`} className="mt-2.5 inline-block text-[14px] font-medium text-[var(--accent)]">

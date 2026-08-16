@@ -51,8 +51,14 @@ export async function POST(req: NextRequest) {
 
   const stream = new ReadableStream({
     async start(controller) {
-      const send = (event: string, data: unknown) =>
-        controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
+      // 客户端提前断开后 enqueue 会抛，吞掉即可——留痕在下面照写
+      const send = (event: string, data: unknown) => {
+        try {
+          controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
+        } catch {
+          /* 流已关闭 */
+        }
+      }
 
       send('meta', { role: s.role, provider, model: currentModel(provider) })
 
@@ -88,7 +94,11 @@ export async function POST(req: NextRequest) {
         })
         send('error', msg)
       }
-      controller.close()
+      try {
+        controller.close()
+      } catch {
+        /* 已关闭 */
+      }
     },
   })
 

@@ -1,6 +1,6 @@
 node_modules/
 .next/
-out/
+/out/
 next-env.d.ts
 *.tsbuildinfo
 
@@ -9,7 +9,8 @@ data/*.db
 data/*.db-journal
 data/*.db-wal
 data/*.db-shm
-export/
+# 前导斜杠只匹配仓库根的导出产物。写成 export/ 会连 src/app/api/export/ 一起吞掉
+/export/
 
 .env
 .env.local

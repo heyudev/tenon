@@ -1,53 +1,6 @@
+import type { OperatorId } from './platform'
+
 // ── 资产层 ──────────────────────────────────────────────
-
-export interface Rule {
-  id: number
-  name: string
-  domain: string
-  real: string
-  change: string
-  hook: string | null
-  scene: string | null
-  star: number
-  writability: number
-  embodiable: boolean
-  market: MarketLevel
-  market_used: string | null
-  market_gap: string | null
-  tags: [boolean, boolean, boolean, boolean, boolean] // 可量化/稀缺/可竞争/有代价/影响所有人
-  concepts: string[]
-  micro: string[] // 催生行业 / 谁获利 / 谁受损 / 新权力 / 最激烈冲突
-  deep: Deep | null
-  field_notes: string | null
-}
-
-export type MarketLevel = '空白' | '零星' | '密集' | '红海' | '未评估'
-
-export interface Deep {
-  q1: string
-  q2: string
-  q3: string
-  q4: string
-  q5: string
-  story: string
-}
-
-export interface Concept {
-  name: string
-  cat: string
-  desc: string | null
-}
-
-export interface Edge {
-  id: number
-  src: string
-  dst: string
-  strength: '强' | '弱'
-  direction: '单向' | '双向'
-  feedback: '正' | '负' | '中'
-  mechanism: string | null
-  origin: string
-}
 
 export interface Resource {
   name: string
@@ -56,18 +9,6 @@ export interface Resource {
   sink: string
   black: string
   analogy: string
-}
-
-export interface Lab {
-  id: number
-  combo: string
-  name: string
-  core: string
-  law: string
-  biz: string
-  black: string
-  war: string
-  hook: string
 }
 
 export interface CraftCard {
@@ -82,7 +23,12 @@ export interface CraftCard {
 
 // ── 项目层 ──────────────────────────────────────────────
 
-export type Platform = '番茄' | '起点'
+/**
+ * 运营商 id。这是**展示字段**，由 venue 派生。
+ * 别拿它做逻辑判断——阵地参数（字数区间、爽点红线、健康线）一律从 VENUE_MAP[venue] 取，
+ * 否则同一运营商下的男频女频、或第三家平台，会被硬编码的二值判断算错。
+ */
+export type Platform = OperatorId
 
 export interface Project {
   id: string
@@ -112,18 +58,6 @@ export interface StageState {
   gate: Record<string, boolean>
   updated_at: string
 }
-
-export interface ProjectRule {
-  project_id: string
-  rule_id: number
-  role: '主规则' | '辅规则'
-  operator: Operator | null
-  rewritten: string | null
-  note: string | null
-  rule?: Rule
-}
-
-export type Operator = '反转' | '量化' | '交易化' | '垄断化' | '隐藏化'
 
 export interface Character {
   id: string

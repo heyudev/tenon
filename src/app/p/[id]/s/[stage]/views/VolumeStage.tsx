@@ -49,7 +49,7 @@ export default function VolumeStage({
             })}
           </div>
           <p className="mt-4 text-[12px] leading-relaxed text-[var(--text-faint)]">
-            卷模板：卷首新地图或新阶层 → 本卷规则差展示 → 主角建立局部优势 → 中段危机（代价清算或身份暴露）→ 卷尾大爽点 + 下一层的钩子。
+            卷模板：卷首新地图或新阶层 → 本卷核心冲突展开 → 主角建立局部优势 → 中段危机（代价清算或身份暴露）→ 卷尾大爽点 + 下一层的钩子。
             <br />
             <br />
             每卷同时要是一个可独立改编的短剧闭环 —— 这是 IP 接口。

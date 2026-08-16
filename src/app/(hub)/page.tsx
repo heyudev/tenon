@@ -8,13 +8,11 @@ import { Eyebrow } from '@/components/ui'
 
 export default function Home() {
   const books = projects.all()
-  const rules = assets.rules()
-  const edges = assets.edges()
   const stats = [
-    { k: '规则', v: rules.length, s: `深度推演 ${rules.filter((r) => r.deep).length} · 可具身化 ${rules.filter((r) => r.embodiable).length}` },
-    { k: '概念节点', v: assets.concepts().length, s: `${edges.length} 条因果边` },
-    { k: '正／负反馈', v: `${edges.filter((e) => e.feedback === '正').length}／${edges.filter((e) => e.feedback === '负').length}`, s: '正反馈过采样，需人工补刹车' },
+    { k: '环节', v: STAGES.length, s: `${LAYERS.length} 层，每层说清不做会死在哪里` },
     { k: '方法论卡片', v: assets.craft().length, s: '全是可执行判据' },
+    { k: '自动判据', v: STAGES.flatMap((s) => s.gate.filter((g) => g.auto)).length, s: '系统从数据里算，人勾不动' },
+    { k: '核心资源参考', v: assets.resources().length, s: '五要素：源头 / 路径 / 沉淀 / 黑市 / 类比' },
   ]
 
   return (
@@ -28,7 +26,7 @@ export default function Home() {
           <span className="text-[var(--accent)]">全环节创作工作台</span>
         </h1>
         <p className="mt-5 max-w-[560px] text-[14px] leading-[1.9] text-[var(--text-dim)]">
-          9 层 50 个环节，从选题、构建、叙事设计、结构、日更生产，一直到发布运营与完结收束。
+          10 层 46 个环节，从选题、构建、叙事设计、结构、日更生产，一直到发布运营与完结收束。
           <br />
           每个环节都说清：不做会死在哪里 · 具体怎么做 · 做到什么算够 · 最容易怎么做砸。
           <br />
@@ -59,7 +57,7 @@ export default function Home() {
 
       {/* 管线总览 */}
       <section className="seat-y seat mt-16" style={{ animationDelay: '120ms' }}>
-        <Eyebrow>创作管线 · 9 层 50 环节</Eyebrow>
+        <Eyebrow>创作管线 · 10 层 46 环节</Eyebrow>
         <div className="mt-4 grid grid-cols-5 gap-3">
           {LAYERS.map((l) => {
             const ss = STAGES.filter((s) => s.layer === l.id)
@@ -98,8 +96,8 @@ export default function Home() {
           <div className="mt-4 border border-dashed border-[var(--line)] px-6 py-14 text-center">
             <p className="text-[14px] text-[var(--text-dim)]">还没有作品。</p>
             <p className="mt-1.5 text-[14px] text-[var(--text-faint)]">
-              从<Link href="/rulebase" className="text-[var(--accent)] hover:underline">规则库</Link>挑一条可写性 ✍5 的规则开始，或直接
-              <Link href="/new" className="text-[var(--accent)] hover:underline">新建作品</Link>。
+              带着你手上那点东西——一个画面、一个人、一条设定、或者只是一个类型——
+              <Link href="/new" className="text-[var(--accent)] hover:underline">新建作品</Link>，入口分诊会告诉你从哪一步切进去。
             </p>
           </div>
         ) : (

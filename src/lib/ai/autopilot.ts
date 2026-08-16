@@ -136,10 +136,19 @@ export async function* autopilot(
     return { text: out, ms: Date.now() - t0 }
   }
 
+  // 本轮已经处理过的章。开了 overwrite 时"有没有正文"不再是筛选条件，
+  // 光靠 todo()[0] 会永远取到同一章、把预算全烧在它身上——必须自己记游标。
+  const seen = new Set<string>()
+
   const todo = () =>
     chapters
       .list(projectId)
-      .filter((c) => (c.event || c.core_event || c.title) && (opts.overwrite || !c.body?.trim()))
+      .filter(
+        (c) =>
+          (c.event || c.core_event || c.title) &&
+          !seen.has(c.id) &&
+          (opts.overwrite || !c.body?.trim()),
+      )
 
   const pendingAll = todo()
   const budget = Math.min(opts.maxChapters, pendingAll.length)
@@ -156,6 +165,7 @@ export async function* autopilot(
     // 每轮重新取，因为上一轮已经落库改变了状态
     const ch = todo()[0]
     if (!ch) break
+    seen.add(ch.id)
 
     yield { t: 'chapter', no: ch.no, title: ch.title ?? `第 ${ch.no} 章` }
 

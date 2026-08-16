@@ -2,21 +2,19 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import {
-  assets,
+import {
   cast,
   chapters,
   decisions,
   locks,
-  metrics,
-  projectRules,
+  metrics,
   projects,
   stageStore,
   threads,
   volumes,
 } from './repo'
 import { setSetting } from './db'
-import { OPERATORS, VENUE_MAP } from './platform'
+import { VENUE_MAP } from './platform'
 
 const touch = (id?: string) => {
   revalidatePath('/', 'layout')
@@ -29,13 +27,9 @@ export async function createProject(fd: FormData) {
   if (!title) return
   const venueId = String(fd.get('venue') ?? 'fanqie-m')
   const v = VENUE_MAP[venueId] ?? VENUE_MAP['fanqie-m']
-  const p = projects.create(
-    title,
-    v.id,
-    OPERATORS[v.operator].name,
-    v.channel,
-    String(fd.get('genre') ?? '') || null,
-  )
+  // platform/channel 都由 venue 派生，存的是运营商 id（'番茄'）而不是全称（'番茄小说'）——
+  // schema 的默认值与展示处都按 id 来
+  const p = projects.create(title, v.id, v.operator, v.channel, String(fd.get('genre') ?? '') || null)
   touch()
   redirect(`/p/${p.id}`)
 }
@@ -59,40 +53,6 @@ export async function saveStage(
 ) {
   stageStore.save(projectId, stageId, patch as never)
   touch(projectId)
-}
-
-/* ── 规则 ── */
-export async function pickRule(projectId: string, ruleId: number, role: string) {
-  projectRules.add(projectId, ruleId, role)
-  touch(projectId)
-}
-export async function unpickRule(projectId: string, ruleId: number) {
-  projectRules.remove(projectId, ruleId)
-  touch(projectId)
-}
-export async function updateProjectRule(projectId: string, ruleId: number, patch: Record<string, unknown>) {
-  projectRules.update(projectId, ruleId, patch)
-  touch(projectId)
-}
-export async function setRuleMarket(id: number, market: string, used: string, gap: string) {
-  assets.setMarket(id, market, used, gap)
-  revalidatePath('/rulebase')
-  revalidatePath('/', 'layout')
-}
-export async function addFieldNote(id: number, note: string) {
-  assets.appendFieldNote(id, note)
-  revalidatePath('/rulebase')
-}
-export async function addEdge(e: {
-  src: string
-  dst: string
-  strength: string
-  direction: string
-  feedback: string
-  mechanism: string
-}) {
-  assets.addEdge({ ...e, origin: '补充' } as never)
-  revalidatePath('/graph')
 }
 
 /* ── 人物 ── */

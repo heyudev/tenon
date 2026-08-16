@@ -7,7 +7,7 @@
 //   pitfalls 这一步最容易怎么做砸
 //   output   能拿走的东西
 //
-// 路线：地图是全的（50 环节），但没有哪本书要走完全部。
+// 路线：地图是全的（46 环节），但没有哪本书要走完全部。
 // 平台 × 频道 × 类型 决定哪些必经、哪些增强、哪些跟这本书无关（见 route 与 lib/genre.ts）。
 //
 // 纯数据，客户端服务端共用。提示词构造在 lib/ai/prompts.ts。
@@ -96,7 +96,7 @@ export interface Layer {
 
 export const LAYERS: Layer[] = [
   { id: 'author', title: '作者', desc: '跨书常驻的资产池：定位 · 素材 · 拆书 · 复用 · 产能。永不挡路', hue: 265 },
-  { id: 'launch', title: '立项', desc: '市场 → 类型契约 → 规则与推演 → 卖点 → 投放物料', hue: 8 },
+  { id: 'launch', title: '立项', desc: '市场 → 类型契约 → 核心创意成型 → 卖点 → 投放物料', hue: 8 },
   { id: 'world', title: '世界', desc: '资源 · 力量 · 金手指 · 地理势力 · 历史 · 圣经汇编', hue: 34 },
   { id: 'cast', title: '人物', desc: '主角 · 反派体系 · 群像 · 关系与情感线 · 声音与对话', hue: 330 },
   { id: 'narrative', title: '叙事', desc: '视角 · 文风 · 多线 · 开篇——决定"怎么讲"，动笔前必须定死', hue: 200 },
@@ -116,7 +116,7 @@ export const STAGES: Stage[] = [
     no: 1,
     layer: 'author',
     title: '作者定位与能力盘',
-    purpose: '赛道选择是四元交集：需求存量 × 供给缺口 × 规则库优势 × 作者适配。第四元一直没人算。',
+    purpose: '赛道选择是四元交集：需求存量 × 供给缺口 × 作者适配 × 差异空间。第四元一直没人算。',
     why: '写不了权谋的人接下权谋赛道，前面所有推演都白做。市场再好，你写不出来就等于零。能力盘决定了哪些赛道对你是真机会、哪些是幻觉。',
     how: [
       '列出你读过 ≥20 本的类型——熟悉度是最硬的适配指标，比"我想写"可靠得多',
@@ -155,7 +155,7 @@ export const STAGES: Stage[] = [
     no: 2,
     layer: 'author',
     title: '素材库',
-    purpose: '规则库给的是世界的骨架，素材库给的是血肉——行业细节、地域风物、职业黑话、器物与饮食。',
+    purpose: '设定给的是世界的骨架，素材库给的是血肉——行业细节、地域风物、职业黑话、器物与饮食。',
     why: '「最小可写场景」能不能写具体，靠的不是想象力是素材量。设定再炸，落到"一个人在一个下午做的一件事"时，没有细节就只能写空气。读者对假的细节零容忍。',
     how: [
       '按"能进场景的最小单位"收：一个动作、一件器物、一句行话、一个气味、一条规矩',
@@ -325,7 +325,7 @@ export const STAGES: Stage[] = [
     no: 6,
     layer: 'launch',
     title: '市场与赛道',
-    purpose: '赛道 = 需求存量 × 供给缺口 × 规则库优势 × 作者适配，四元交集。',
+    purpose: '赛道 = 需求存量 × 供给缺口 × 作者适配 × 差异空间，四元交集。',
     why: '选错赛道，后面每一步都在给一个没人要的东西做优化。而赛道判断如果不算作者适配，选出来的往往是"看起来很好但我写不了"的路。',
     how: [
       '看目标平台分类榜：头部书的更新状态、在读人数、评论时效 —— 判断需求还在不在',
@@ -409,211 +409,51 @@ export const STAGES: Stage[] = [
     ],
   },
   {
-    id: 'b9-reverse',
+    id: 'b9-core',
     no: 8,
     layer: 'launch',
-    title: '逆向管线 · 画面反查规则',
-    purpose: '你手上先有的是一个画面，不是一条规则。这条路同样合法，而且往往更快。',
-    why: '规则负责让书不烂尾，画面负责让书能开头。 从规则出发常见的失败是"推演很炸但第一章落不了笔"；从画面出发常见的失败是"开头很好但五十万字处崩掉"。逆向管线就是拿规则库当刹车和油箱，给已有的画面做纵深体检。',
+    title: '核心创意成型',
+    purpose: '把你手上那点东西——不管是一个画面、一个人、一条设定还是一个类型——推到能被验证的程度。',
+    why: '这一步不负责给你创意，负责把创意推到"能判断它值不值得写几百万字"。 跳过它直接开写，最常见的死法是：开头很好，五十万字处崩掉——因为那个想法从来没被检验过能不能推动，也没人问过它靠什么撑长篇。',
     how: [
-      '把画面写成四件套：谁 ｜ 在哪 ｜ 握着什么 ｜ 正在做什么。不要写氛围，写动作',
-      '反查：这个画面之所以成立，是因为现实中哪条默认规则被改掉了？在规则库搜同类概念，通常能定位 1-2 条',
-      '校验纵深：拿这条规则跑五问推演。推不出稳态六件套，说明这只是个点子，撑不起长篇',
-      '纵深不够时，按共享概念找一条高潜力规则做辅规则，把天花板抬上去',
+      '先写开场画面四件套：谁 ｜ 在哪 ｜ 握着什么 ｜ 正在做什么。写动作，不要写氛围',
+      '指认里面那个人：他想要什么（具体到能数出来的东西），什么挡着他，退了会失去什么',
+      '做推动力测试：这一场结束之后，必然会发生什么？说不出"必然"，说明这是个静止的点子不是故事的开头',
+      '做长篇支撑测试：什么东西能让它写几百章而不重复自己——是这个人还没解决的欲望、还是这个处境本身在不断升级',
+      '来源不限：设定、画面、人物、类型都能从这里进。系统不替你选路，只检查你手上的东西站不站得住',
     ],
     pitfalls: [
-      '跳过校验直接开写 —— 这正是"五十万字处烂尾"的标准路径',
-      '反查出规则后就丢掉原画面，回到正向管线的抽象层，把最好写的东西弄丢了',
-      '画面写成了氛围描写而不是具体动作，反查不出规则',
+      '画面写成了氛围描写而不是具体动作 —— 没有动作就没有下一场',
+      '有世界没有人：说得出这个世界怎么运转，说不出谁站在里面想要什么',
+      '推动力测试用"然后他继续变强"糊过去 —— 那不是必然发生的事，是没想清楚',
+      '把"我觉得这个点子很酷"当成通过了验证',
     ],
-    output: '开场切口 + 它踩着的规则 + 纵深校验结论',
-    route: { always: false },
-    needs: ['b2-genre'],
-    view: 'generic',
-    craft: ['c-two-rulers', 'c-five-questions'],
-    ai: [{ id: 'reverse', label: '反查规则', role: '总策划', hint: '从画面定位它改写了哪条现实规则' }],
-    fields: [
-      { k: 'text', id: 'scene', label: '那个画面', placeholder: '谁 ｜ 在哪 ｜ 握着什么 ｜ 正在做什么' },
-      { k: 'area', id: 'rule', label: '它踩在哪条规则上', rows: 2 },
-      { k: 'area', id: 'depth', label: '纵深校验结论', hint: '五问推得出稳态吗？推不出就是点子不是长篇', rows: 3 },
-      { k: 'text', id: 'aux', label: '需要补的辅规则', hint: '天花板不够时用来抬高的那条' },
-    ],
-    gate: [
-      { id: 'g1', text: '画面写成了四件套（谁/在哪/握着什么/做什么）', hard: true },
-      { id: 'g2', text: '反查出了 1-2 条被改写的规则', hard: true },
-      { id: 'g3', text: '纵深校验通过：五问能推出稳态六件套', hard: true },
-    ],
-  },
-  {
-    id: 'b3-rules',
-    no: 9,
-    layer: 'launch',
-    title: '选规则 · 关口零',
-    purpose: '按可写性挑主规则（决定第一章写不写得动），按潜力挑辅规则（决定世界的天花板）。选完立刻查重。',
-    why: '两把尺子混用，是"选出来的规则很难写"的唯一根因。而查重不前置，就会出现"设定全做完才发现撞车"——死因不在设计质量，在赛道拥挤。',
-    how: [
-      '按 b2 定下的类型，去对应领域筛规则',
-      '主规则从可写性五星且可具身化里挑；辅规则可以从高潜力里挑，但必须与主规则共享 ≥1 个概念节点',
-      '选中后立刻做同类调研：拿改写后的卖点去搜榜单，找 ≥3 本同类，判定占用度',
-      '结论回写规则笔记——一次调研的成本只付一次，不回写就要付第二次',
-    ],
-    pitfalls: [
-      '拿潜力尺子挑开局规则，结果第一章落不了笔',
-      '"未评估"当成"安全"',
-      '整组规则没有一条可具身化 —— 主角手里没有能握住的东西',
-      '主规则选两条：理解门槛翻倍，等于两本书硬挤一本',
-    ],
-    output: '主规则 1 条 + 辅规则 ≤2 条 + 市场占用结论',
-    route: { archetypes: ['world', 'power', 'plot'] },
-    needs: ['b2-genre'],
-    view: 'rules',
-    craft: ['c-two-rulers', 'c-market-first', 'c-operators'],
-    ai: [{ id: 'recon', label: '同类调研提纲', role: '运营模型' }],
-    fields: [{ k: 'area', id: 'recon', label: '同类调研结论', hint: '占用度 + 差异化一句话 + 留白方向', rows: 4 }],
-    gate: [
-      { id: 'g1', text: '每条候选规则的市场占用已评估（不是未评估）', auto: 'rules-market', hard: true },
-      { id: 'g2', text: '同类调研 ≥3 本，占用度为 空白 / 零星', hard: true },
-      { id: 'g3', text: '差异化能用一句话说清', hard: true },
-      { id: 'g4', text: '主规则仅 1 条，辅规则 ≤2 条且共享概念节点', auto: 'rules-count' },
-      { id: 'g5', text: '整组至少一条可具身化', auto: 'rules-embodiable', hard: true },
-      { id: 'g6', text: '调研结论已回写规则笔记' },
-    ],
-  },
-  {
-    id: 'b4-operator',
-    no: 10,
-    layer: 'launch',
-    title: '改写算子',
-    purpose: '一条规则 × 一个算子 = 一个候选世界观。主规则只用一个主算子。',
-    why: '算子是把"现实规则"变成"规则差"的唯一动作。没有明确的算子，你的设定就是若干灵感的堆叠，读者感受不到统一的"这个世界哪里不一样"。',
-    how: [
-      '对主规则跑五个算子各写一句话，比较哪个的世界最刺眼',
-      '按平台选：走流量的偏向量化与交易化（数值可见＝爽点可见），走订阅的偏向隐藏化与垄断化（信息差纵深）',
-      '定玩法：单点改写最稳；规则打架张力最强；加价码爽虐平衡最好；隐藏规则开局最炸但必须预埋"规则的规则"',
-      '压成一句话规则差，这句话后面会进每一次生成的常驻记忆',
-    ],
-    pitfalls: [
-      '算子叠太多，世界变得没法一句话说清',
-      '选了隐藏规则玩法却没预埋"规则的规则"，第二卷崩',
-      '规则差写成了世界设定描述，而不是"与现实的差值"',
-    ],
-    output: '规则差一句话',
-    route: { archetypes: ['world', 'power', 'plot'] },
+    output: '开场切口 + 核心人物的欲望与阻碍 + 推动力与长篇支撑结论',
+    route: { always: true },
     minViable: true,
-    needs: ['b3-rules'],
+    needs: ['b2-genre'],
     view: 'generic',
-    craft: ['c-operators'],
-    ai: [{ id: 'variants', label: '五算子全展开', role: '总策划' }],
-    fields: [
-      { k: 'select', id: 'operator', label: '主算子', options: OPERATORS },
-      { k: 'text', id: 'diff', label: '规则差（一句话）', placeholder: '当〔现实规则〕变成〔改写后规则〕……' },
-      {
-        k: 'select',
-        id: 'play',
-        label: '上手玩法',
-        options: ['单点改写（最稳）', '规则打架（张力最强）', '加价码（爽虐平衡最好）', '隐藏规则（开局张力最大）'],
-      },
-      { k: 'area', id: 'why', label: '为什么是这个算子', rows: 2 },
-    ],
-    gate: [
-      { id: 'g1', text: '主规则只用了一个主算子', auto: 'operator-one' },
-      { id: 'g2', text: '规则差一句话说得清，且听者会自行脑补场景', auto: 'diff-oneline', hard: true },
-      { id: 'g3', text: '若用隐藏规则玩法，已预埋"规则的规则"' },
-    ],
-  },
-  {
-    id: 'b5-graph',
-    no: 11,
-    layer: 'launch',
-    title: '传导推演',
-    purpose: '扰动沿概念因果边传导，找出正反馈环（阶层固化引擎）与负反馈环（世界为什么还没崩）。',
-    why: '只改一条规则不推传导，写出来的世界会"设定很炸、世界很假"——读者的直觉会自动检查二阶效应。图谱把这些效应变成可查表的推演，而不是临场脑补。',
-    how: [
-      '定位入口：主规则挂载的概念',
-      '一阶：逐条出边问"扰动过去，目标概念发生什么"，要具体后果不要抽象词',
-      '二阶：再外推一层，重点找环',
-      '每找到一个正反馈环，必须配一个负反馈环（制度/物理/社会/对手四类刹车，对手刹车最好用——刹车本身就是反派）',
-      '到三阶或遇弱边即停',
-    ],
-    pitfalls: [
-      '全是正反馈环就开写 —— 任何扰动都会指数发散，世界三卷内必崩',
-      '传导写成抽象结论（"社会会变得混乱"），没有具体后果',
-      '推到五阶六阶，越推越远离故事',
-    ],
-    output: '《扰动路径图》：入口概念 + 被波及清单 + 正负反馈环各 ≥1',
-    // 贴着日常经验的类型不需要推演一个新文明
-    route: { archetypes: ['world'], notFor: ['slice'] },
-    needs: ['b4-operator'],
-    view: 'graph',
-    craft: ['c-graph'],
-    ai: [{ id: 'propagate', label: '跑三阶传导', role: '总策划' }],
-    fields: [
-      { k: 'list', id: 'affected', label: '被波及概念' },
-      { k: 'area', id: 'loop_pos', label: '正反馈环（放大）', hint: '这是阶层固化引擎，反派阵营的结构性根基', rows: 3 },
-      { k: 'area', id: 'loop_neg', label: '负反馈环（刹车）', hint: '这是世界为什么还没崩，也是主角的杠杆', rows: 3 },
-      { k: 'area', id: 'edge_rewrite', label: '改边（最高级玩法）', hint: '把一条现实弱边改成强边。判据：最先失业的是谁、最先暴富的是谁', rows: 2 },
-    ],
-    gate: [
-      { id: 'g1', text: '关键正反馈环 ≥1 个' },
-      { id: 'g2', text: '每个正反馈环都配了一个负反馈环', auto: 'loop-brake', hard: true },
-      { id: 'g3', text: '传导推到三阶或弱边为止，未无限发散' },
-    ],
-  },
-  {
-    id: 'b6-civ',
-    no: 12,
-    layer: 'launch',
-    title: '文明推演',
-    purpose: '五问推演求解扰动后的新稳态。顺序即因果链，不可跳步。',
-    why: '五问的答案就是后面所有剧情的原料库：阵营是冲突的燃料，权力结构是主线战场，六件套是剧情发生器。不要发明冲突，去六件套里查表。',
-    how: [
-      '按顺序答五问，每一问的答案必须能从上一问推出来',
-      '固化成稳态六件套：新法律 / 新经济 / 新职业 / 新组织 / 新黑市 / 新战争，每件给 2-4 个有名字的具体物',
-      '用黑市做自洽性体检：想不出黑市，说明稀缺性或代价设计有问题',
-      '预埋三层纵深，后两层各留一句话假设即可',
-    ],
-    pitfalls: [
-      '五问断链：权力结构与社会剧变对不上，冲突不发生在两个阵营之间',
-      '六件套写成概念说明而不是具体的东西（"会有新的职业出现" ← 无效）',
-      '动笔前把三层纵深全推完，锁死了按数据调整的空间',
-    ],
-    output: '稳态六件套 + 三层纵深假设',
-    route: { archetypes: ['world'], notFor: ['slice'] },
-    needs: ['b5-graph'],
-    view: 'generic',
-    craft: ['c-five-questions'],
+    craft: ['c-two-rulers'],
     ai: [
-      { id: 'five', label: '跑五问推演', role: '总策划' },
-      { id: 'six', label: '推稳态六件套', role: '总策划' },
+      { id: 'push', label: '做推动力体检', role: '总策划', hint: '这一场之后必然发生什么，能不能生出下一场' },
     ],
     fields: [
-      { k: 'area', id: 'q1', label: '① 社会剧变', hint: '社会 / 商业 / 法律 / 人 四个切面', rows: 4 },
-      { k: 'area', id: 'q2', label: '② 谁受益 · 谁受损', hint: '具体阵营，不是"富人穷人"', rows: 3 },
-      { k: 'area', id: 'q3', label: '③ 新权力结构', hint: '谁掌握分配权/审批权/豁免权', rows: 3 },
-      { k: 'area', id: 'q4', label: '④ 最激烈的冲突', hint: '这就是主线战争', rows: 3 },
-      { k: 'area', id: 'q5', label: '⑤ 爽点在哪', rows: 3 },
-      {
-        k: 'table',
-        id: 'six',
-        label: '稳态六件套',
-        hint: '黑市是自洽性的试金石',
-        cols: [
-          { id: 'k', label: '组件', grow: 1 },
-          { id: 'v', label: '内容（要有名字的具体物）', grow: 5 },
-        ],
-      },
-      { k: 'text', id: 'depth2', label: '第二层假设 · 隐藏结构' },
-      { k: 'text', id: 'depth3', label: '第三层假设 · 元规则' },
+      { k: 'text', id: 'scene', label: '开场画面', placeholder: '谁 ｜ 在哪 ｜ 握着什么 ｜ 正在做什么' },
+      { k: 'text', id: 'want', label: '他想要什么', hint: '具体到能数出来：还剩 3 天 / 欠 47 万 / 找到那个人' },
+      { k: 'area', id: 'block', label: '什么挡着他', hint: '人、处境、还是他自己的某个东西', rows: 2 },
+      { k: 'area', id: 'push', label: '这一场之后必然发生什么', hint: '说不出"必然"就是静止的点子', rows: 3 },
+      { k: 'area', id: 'longform', label: '它靠什么撑几百章', hint: '未解决的欲望？不断升级的处境？', rows: 3 },
     ],
     gate: [
-      { id: 'g1', text: '五问无断链', hard: true },
-      { id: 'g2', text: '六件套齐全，黑市想得出来', auto: 'six-black', hard: true },
-      { id: 'g3', text: '三层纵深各有一句话假设' },
+      { id: 'g1', text: '开场画面写成了四件套（谁/在哪/握着什么/做什么）', hard: true },
+      { id: 'g2', text: '画面里站着一个人，且他想要的东西是具体的', hard: true },
+      { id: 'g3', text: '说得出这一场之后必然发生什么', hard: true },
+      { id: 'g4', text: '说得出它靠什么撑长篇，不是"继续变强"' },
     ],
   },
   {
     id: 'b7-concept',
-    no: 13,
+    no: 9,
     layer: 'launch',
     title: '卖点与立项',
     purpose: '把核心差异压成一句话，再验证它值不值得投入几百万字。',
@@ -683,7 +523,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'b8-package',
-    no: 14,
+    no: 10,
     layer: 'launch',
     title: '书名简介与投放物料',
     purpose: '书名、简介、标签、封面 brief —— 转化率上的分量等同于黄金三章。',
@@ -728,7 +568,7 @@ export const STAGES: Stage[] = [
   // ══════════════════════════ C 世界构建层 ══════════════════════════
   {
     id: 'c1-resource',
-    no: 15,
+    no: 11,
     layer: 'world',
     title: '资源系统',
     purpose: '不要设计能力，设计资源流。能力是表现层，资源是本体层。',
@@ -746,7 +586,7 @@ export const STAGES: Stage[] = [
     ],
     output: '《核心资源设计表》',
     route: { archetypes: ['world', 'power'] },
-    needs: ['b6-civ'],
+    needs: ['b7-concept'],
     view: 'resources',
     craft: ['c-resource'],
     ai: [{ id: 'flow', label: '推演资源五要素', role: '总策划' }],
@@ -775,7 +615,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'c2-power',
-    no: 16,
+    no: 12,
     layer: 'world',
     title: '力量体系',
     purpose: '主角与资源之间的汇率制度：投入什么、兑换多大力量、付出什么代价。',
@@ -839,14 +679,14 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'c3-cheat',
-    no: 17,
+    no: 13,
     layer: 'world',
     title: '金手指专项',
     purpose: '金手指是这本书的发动机。它值得一个独立环节，而不是散在力量体系和人物里。',
     why: '金手指没设计好会同时毁掉三件事：爽点（不够爽或太爽）、张力（无限制则剧情提前结束）、代入（与主角性格割裂）。它是读者对这本书的第一记忆点，也是简介里最该出现的东西。',
     how: [
       '定来源：为什么是他？来源本身应该是一个可回收的悬念',
-      '定与核心差异的同源关系：金手指必须与规则差同源，不能是外挂式的另一套系统',
+      '定同源关系：金手指必须与主角的核心欲望同源——它正好能帮他拿到他要的东西，又逼他付代价。不能是外挂式的另一套系统',
       '定成长：它自己会不会变强？怎么变？',
       '定至少两种刹车（频次/条件/知情/层级），并说明每种刹车带来的剧情红利',
       '定代价：用它要付出什么。没有代价的力量没有重量',
@@ -855,7 +695,7 @@ export const STAGES: Stage[] = [
     ],
     pitfalls: [
       '万能金手指 —— 主角不需要做决策，剧情提前结束',
-      '与规则差不同源，变成两套设定各转各的',
+      '与主角想要的东西无关，变成两套设定各转各的',
       '第一章就把上限展示完，后面无处升级',
       '刹车只写在设定里，剧情中从不真正生效',
     ],
@@ -894,7 +734,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'c4-geo',
-    no: 18,
+    no: 14,
     layer: 'world',
     title: '地理与势力',
     purpose: '主角的活动半径逐卷扩张，每一层地图对应一层阶层与一组势力。',
@@ -912,7 +752,7 @@ export const STAGES: Stage[] = [
     ],
     output: '地图分层表 + 势力卡 + 势力关系图',
     route: { archetypes: ['world', 'plot', 'power'] },
-    needs: ['b6-civ'],
+    needs: ['b7-concept'],
     view: 'generic',
     craft: ['c-five-questions', 'c-faction'],
     ai: [{ id: 'faction', label: '推演势力格局', role: '总策划' }],
@@ -952,7 +792,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'c5-history',
-    no: 19,
+    no: 15,
     layer: 'world',
     title: '历史与时间线',
     purpose: '当代格局是怎么来的。大伏笔与终局反转，多半挂在历史上。',
@@ -971,7 +811,7 @@ export const STAGES: Stage[] = [
     ],
     output: '大事年表 + 官方说法/真相对照 + 当前时间轴',
     route: { archetypes: ['world', 'plot'] },
-    needs: ['b6-civ'],
+    needs: ['b7-concept'],
     view: 'generic',
     craft: ['c-suspense', 'c-writeback'],
     ai: [{ id: 'history', label: '推演世界史', role: '总策划', hint: '含官方说法与真相的差' }],
@@ -1000,7 +840,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'c6-bible',
-    no: 20,
+    no: 16,
     layer: 'world',
     title: '世界观圣经汇编',
     purpose: '把前面所有构建结果固化成写作时唯一可信的真相源，并用一个 NPC 的 24 小时验收。',
@@ -1055,13 +895,13 @@ export const STAGES: Stage[] = [
   // ══════════════════════════ D 人物与情感层 ══════════════════════════
   {
     id: 'd1-hero',
-    no: 21,
+    no: 17,
     layer: 'cast',
     title: '主角设计',
-    purpose: '主角必须与核心差异结构性绑定。站位只有三种：例外者、套利者、执法者。',
+    purpose: '主角必须与主线冲突结构性绑定。站位只有三种：局外人、内行人、执行者。',
     why: '主角可替换成任何人，这本书就没有存在的必要。站位决定了天然剧情、爽点形态和读者代入方式——它是人物设计里唯一不能含糊的决策。',
     how: [
-      '选站位：规则对他不生效（例外者）／他比所有人更懂规则（套利者）／他持有规则的执行权（执法者）',
+      '选站位：那套压着他的结构管不住他（局外人）／他比所有人更早看懂它怎么运转（内行人）／他本身就是它的一部分、替它办事（执行者）',
       '写开局困境：必须由核心差异直接造成，且要数字化（还剩 3 天／欠 47 万／信用分 11）',
       '写双层动机：表层具体而小（救人、还债、活过这个月），深层中期觉醒。开局只给表层',
       '定对规则的态度（敬畏／戏耍／憎恨／利用）——这是人物弧光的坐标轴',
@@ -1083,7 +923,7 @@ export const STAGES: Stage[] = [
     ai: [{ id: 'hero', label: '生成主角卡', role: '人物导演' }],
     fields: [],
     gate: [
-      { id: 'g1', text: '站位明确（例外者/套利者/执法者三选一）', auto: 'hero-stance', hard: true },
+      { id: 'g1', text: '站位明确（局外人/内行人/执行者三选一）', auto: 'hero-stance', hard: true },
       { id: 'g2', text: '开局困境由核心差异造成，且数字化', hard: true },
       { id: 'g3', text: '双层动机：表层具体而小，深层中期觉醒', auto: 'hero-motive' },
       { id: 'g4', text: '对规则的态度已定' },
@@ -1093,7 +933,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'd2-villain',
-    no: 22,
+    no: 18,
     layer: 'cast',
     title: '反派体系',
     purpose: '反派的强度决定爽点的高度。 这不是一句修辞，是设计约束。',
@@ -1121,6 +961,8 @@ export const STAGES: Stage[] = [
     gate: [
       { id: 'g1', text: '终极反派的动机在他自己的逻辑里成立', hard: true },
       { id: 'g2', text: '反派梯队级别递增，与主角成长阶段对应' },
+      // 只统计人数：系统能判"有没有真的建档"，判不了"赢得够不够漂亮"，后者留给 g3
+      { id: 'g6', text: '反派梯队已经建档进人物表', auto: 'villain-win' },
       { id: 'g3', text: '每个主要反派都有一次赢过主角的时刻', hard: true },
       { id: 'g4', text: '代价转嫁链画出来了，终点是终极反派的罪证' },
       { id: 'g5', text: '没有任何一处需要反派降智才能推进', hard: true },
@@ -1128,7 +970,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'd3-cast',
-    no: 23,
+    no: 19,
     layer: 'cast',
     title: '配角与群像',
     purpose: '配角是爽点工程的基础设施（见证者密度）与阵营的人格化。',
@@ -1162,7 +1004,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'd4-relation',
-    no: 24,
+    no: 20,
     layer: 'cast',
     title: '关系网与情感线',
     purpose: '女频这是主轴，男频这是留存抓手。两种情况下它都不该是想到哪写到哪。',
@@ -1234,7 +1076,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'd5-voice',
-    no: 25,
+    no: 21,
     layer: 'cast',
     title: '人物声音与对话',
     purpose: '把人名遮住，读者还能认出这句话是谁说的——这是人物写成立了的判据。',
@@ -1283,7 +1125,7 @@ export const STAGES: Stage[] = [
   // ══════════════════════════ E 叙事设计层 ══════════════════════════
   {
     id: 'e1-pov',
-    no: 26,
+    no: 22,
     layer: 'narrative',
     title: '视角与人称',
     purpose: '动笔前必须定死，定错要推倒重写。 这是全书最贵的一个决策。',
@@ -1325,7 +1167,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'e2-style',
-    no: 27,
+    no: 23,
     layer: 'narrative',
     title: '文风与语感',
     purpose: '样例优于形容。给 200 字样例，胜过十个形容词。',
@@ -1365,7 +1207,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'e3-lines',
-    no: 28,
+    no: 24,
     layer: 'narrative',
     title: '叙事结构与多线',
     purpose: '主线之外还有几条线？它们在哪里交汇？',
@@ -1424,7 +1266,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'e4-opening',
-    no: 29,
+    no: 25,
     layer: 'narrative',
     title: '开篇方案竞选',
     purpose: '开篇要写 3-5 个版本挑，不是一次写成。这是全书投入产出比最高的地方。',
@@ -1461,7 +1303,7 @@ export const STAGES: Stage[] = [
         ],
       },
       { k: 'select', id: 'chosen', label: '选定方案', options: ['危机切入', '悬念切入', '能力切入', '信息差切入', '身份切入'] },
-      { k: 'area', id: 'ch1', label: '第 1 章动作清单核对', hint: '规则差亮相 / 数字化困境 / 章尾钩子 / 无禁忌项', rows: 3 },
+      { k: 'area', id: 'ch1', label: '第 1 章动作清单核对', hint: '主角困境亮相 / 数字化困境 / 章尾钩子 / 无禁忌项', rows: 3 },
       { k: 'area', id: 'ch2', label: '第 2 章动作清单核对', hint: '金手指同源激活 / 代价暗示 / 微小但具体的翻盘', rows: 3 },
       { k: 'area', id: 'ch3', label: '第 3 章动作清单核对', hint: '完整爽点闭环 / 卷级悬念 / 指向更大舞台', rows: 3 },
     ],
@@ -1479,7 +1321,7 @@ export const STAGES: Stage[] = [
   // ══════════════════════════ F 结构层 ══════════════════════════
   {
     id: 'f1-outline',
-    no: 30,
+    no: 26,
     layer: 'structure',
     title: '总纲 · 四层揭露',
     purpose: '全书主轴 = 核心差异的逐层揭露。规则守恒：终卷的一切在第一卷已有种子。',
@@ -1520,7 +1362,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'f2-volume',
-    no: 31,
+    no: 27,
     layer: 'structure',
     title: '卷纲',
     purpose: '每卷是一个完整闭环，同时也是一个可独立改编的单元。',
@@ -1548,11 +1390,13 @@ export const STAGES: Stage[] = [
       { id: 'g2', text: '卷末有足够大的高潮' },
       { id: 'g3', text: '卷模板五段齐全' },
       { id: 'g4', text: '每卷指出了可独立成篇的闭环' },
+      // 这条判据要同时有等级表和卷数才算得出来，所以挂在卷纲这一步，不挂在更早的 c2-power
+      { id: 'g5', text: '力量等级密度与卷数匹配（≈ 卷数 × 1.5）', auto: 'power-count' },
     ],
   },
   {
     id: 'f3-threads',
-    no: 32,
+    no: 28,
     layer: 'structure',
     title: '悬念与伏笔账本',
     purpose: '长篇悬念用记账法管理，防"挖坑不填"。',
@@ -1585,7 +1429,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'f4-beats',
-    no: 33,
+    no: 29,
     layer: 'structure',
     title: '事件线与爽点排期',
     purpose: '大纲只写到"事件"粒度。排期自检看总量会漏，必须看最大间隔。',
@@ -1622,7 +1466,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'f5-climax',
-    no: 34,
+    no: 30,
     layer: 'structure',
     title: '高潮与卷末设计',
     purpose: '卷末大高潮是拉数据的节点，也是读者决定要不要追下一卷的地方。',
@@ -1672,7 +1516,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'f6-scene',
-    no: 35,
+    no: 31,
     layer: 'structure',
     title: '场景设计',
     purpose: '事件线与正文之间还缺一层：场景。场景是叙事的最小单元。',
@@ -1723,7 +1567,7 @@ export const STAGES: Stage[] = [
   // ══════════════════════════ G 生产层 ══════════════════════════
   {
     id: 'g1-brief',
-    no: 36,
+    no: 32,
     layer: 'produce',
     title: '章节规划',
     purpose: '章级 brief 五行：场景 / 人物 / 核心事件 / 反转 / 钩子型号。人写，不外包。',
@@ -1755,7 +1599,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'g2-draft',
-    no: 37,
+    no: 33,
     layer: 'produce',
     title: '正文生成',
     purpose: '分层记忆 + brief → 初稿。一次只写一章。关键章多写几版。',
@@ -1786,7 +1630,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'g3-polish',
-    no: 38,
+    no: 34,
     layer: 'produce',
     title: '人工润色',
     purpose: '关键 20% 必须人工过手。这是整本书的灵魂税，不可豁免。',
@@ -1818,7 +1662,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'g4-gate',
-    no: 39,
+    no: 35,
     layer: 'produce',
     title: '审校门禁',
     purpose: '三道闸：结构闸（可自动化）、一致性闸（全量比对）、风味闸（纯人工）。',
@@ -1851,7 +1695,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'g5-writeback',
-    no: 40,
+    no: 36,
     layer: 'produce',
     title: '状态回写',
     purpose: '不回写 = 这一章没完成。哪一章漏回写，那一章之后的连续性就开始腐烂。',
@@ -1886,7 +1730,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'g6-stock',
-    no: 41,
+    no: 37,
     layer: 'produce',
     title: '存稿与更新排期',
     purpose: '断更是长篇头号死因之一，而它几乎总是可预测的。',
@@ -1934,7 +1778,7 @@ export const STAGES: Stage[] = [
   // ══════════════════════════ H 运营层 ══════════════════════════
   {
     id: 'h1-launch',
-    no: 42,
+    no: 38,
     layer: 'operate',
     title: '发布准备',
     purpose: '上架前的最后一次检查：物料、章标题、分卷、节点。',
@@ -1981,7 +1825,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'h2-metrics',
-    no: 43,
+    no: 39,
     layer: 'operate',
     title: '数据看板',
     purpose: '发布不是终点，是校准的开始。',
@@ -2011,7 +1855,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'h3-diagnose',
-    no: 44,
+    no: 40,
     layer: 'operate',
     title: '诊断与调整',
     purpose: '数据异常 → 创作动作。三个杠杆按成本排序。',
@@ -2057,7 +1901,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'h4-community',
-    no: 45,
+    no: 41,
     layer: 'operate',
     title: '读者反馈与社区',
     purpose: '数字告诉你哪里出事，评论告诉你为什么。',
@@ -2103,7 +1947,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'h5-retro',
-    no: 46,
+    no: 42,
     layer: 'operate',
     title: '卷末复盘与资产回流',
     purpose: '引擎"越用越强"的机制本体。跳过复盘，这套框架就只是一堆静态文档。',
@@ -2144,7 +1988,7 @@ export const STAGES: Stage[] = [
   // ══════════════════════════ I 收尾层 ══════════════════════════
   {
     id: 'i1-finish',
-    no: 47,
+    no: 43,
     layer: 'close',
     title: '完结收束',
     purpose: '主线闭环 + 伏笔全收 + 番外。长篇的最后一公里。',
@@ -2196,7 +2040,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'i2-derive',
-    no: 48,
+    no: 44,
     layer: 'close',
     title: '完本复盘与 IP 派生',
     purpose: '世界观是固定资产，剧情是消耗品。一本写完，资产要能开下一本。',
@@ -2237,7 +2081,7 @@ export const STAGES: Stage[] = [
   // ══════════════════════════ X 横切协议（随时可触发） ══════════════════════════
   {
     id: 'x-rescue',
-    no: 49,
+    no: 45,
     layer: 'protocol',
     title: '卡文救火',
     purpose: '写不下去了怎么办。这是真实创作里最高频的需求，不该没有流程。',
@@ -2287,7 +2131,7 @@ export const STAGES: Stage[] = [
   },
   {
     id: 'x-risk',
-    no: 50,
+    no: 46,
     layer: 'protocol',
     title: '风险合规扫描',
     purpose: '题材红线、影射风险、平台审核。写完才发现过不了审是最贵的返工。',
