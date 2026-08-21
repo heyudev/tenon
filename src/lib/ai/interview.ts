@@ -167,6 +167,27 @@ for (const fid of HERO_FIELDS) OWNER[fid] = 'hero'
 /** 所有段落名，含 hero。用来判断"这一行是新段落的标题，不是上一个字段的续行" */
 const SECTION_KEYS = [...Object.keys(DRAFT_FIELDS), 'hero']
 
+/**
+ * 把模型的回答对回给定选项。
+ *
+ * 不能直接 includes：模型会在选项里加空格、改标点、后面再缀一串解释，
+ * 比如选项是「中距（写行为+少量内心）」，它写成「中距（写行为 + 少量内心，用动作带情绪）」，
+ * 字面对不上就整项丢掉。所以先抹掉空白再比，最后退到括号前的短名（中距 / 贴身 / 远距）。
+ */
+function matchOption(options: string[], raw: string): string | null {
+  if (!options.length) return null
+  const flat = (s: string) => s.replace(/\s+/g, '')
+  const r = flat(raw)
+  return (
+    options.find((o) => r.includes(flat(o))) ??
+    options.find((o) => {
+      const short = flat(o).split(/[（(]/)[0]
+      return short.length >= 2 && r.includes(short)
+    }) ??
+    null
+  )
+}
+
 /** 模型爱把字段标签抄进值里（`same：与核心差异的同源关系——他能…`），去掉这个前缀 */
 function stripEchoedLabel(sid: string, fid: string, v: string): string {
   const label = STAGE_MAP[sid]?.fields.find((x) => x.id === fid)?.label
@@ -201,9 +222,8 @@ export function parseDraft(text: string): Draft {
         // 去重：模型经常把同一个词吐两遍
         stages[sid][key] = [...new Set(raw.split(/[、,，\n]/).map((s) => s.trim()).filter(Boolean))]
       } else if (f?.k === 'select') {
-        // 答得啰嗦就取包含关系；对不上宁可丢弃，不往真相源塞脏值
-        const hit = (SELECT_FIELDS[`${sid}.${key}`] ?? []).find((o) => raw.includes(o))
-        if (hit) stages[sid][key] = hit
+        const hit = matchOption(SELECT_FIELDS[`${sid}.${key}`] ?? [], raw)
+        if (hit) stages[sid][key] = hit // 对不上宁可丢弃，不往真相源塞脏值
       } else {
         stages[sid][key] = raw
       }

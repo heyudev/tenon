@@ -64,6 +64,13 @@ export default async function GuidePage({ params }: { params: Promise<{ id: stri
   // 只有一个目标：没动笔之前，一切都为「能写第一章」服务；动笔之后才谈全路线。
   const goal = mvReady ? 'core' : 'draft'
   const mvLeft = mv.filter((x) => !x.g.passed)
+  // 访谈是否已经做过：核心创意那三个种子字段有值就算做过。
+  // 不能用「最小可动笔进度」判断——门禁全是人工硬项，访谈填完数据进度仍是 0，
+  // 那样会一直推荐已经做完的事。
+  const coreData = (states['b9-core']?.data ?? {}) as Record<string, unknown>
+  const interviewed = ['scene', 'want', 'block'].some(
+    (k) => typeof coreData[k] === 'string' && (coreData[k] as string).trim(),
+  )
 
   const why = (x: typeof next) => {
     if (!x) return ''
@@ -126,8 +133,19 @@ export default async function GuidePage({ params }: { params: Promise<{ id: stri
         {goal === 'draft' && `　必经 ${corePassed}/${core.length}`}
       </p>
 
-      {/* 一个都没过的时候，逐个填 7 个环节太劝退——先给一条快路 */}
-      {goal === 'draft' && mvPassed === 0 && (
+      {/* 访谈做完之后，门禁还得人一条条过——这时候要说的是「去过门禁」，不能还推访谈 */}
+      {goal === 'draft' && interviewed && (
+        <div className="mt-7 border border-[var(--color-celadon)]/35 bg-[var(--color-celadon)]/5 px-5 py-4">
+          <div className="text-[14px] font-medium">草稿已经填进去了</div>
+          <p className="mt-1.5 text-[14px] leading-relaxed text-[var(--text-dim)]">
+            接下来是<strong>你</strong>的活：逐个环节看一眼，把门禁勾掉。带「系统判」的那些不用管，它们从数据里自己算；
+            剩下的是只有你能判的——够不够狠、愿不愿意点下一章。不同意草稿的地方直接改，这本来就是草稿。
+          </p>
+        </div>
+      )}
+
+      {/* 一个都没过、也还没做过访谈的时候，逐个填 7 个环节太劝退——先给一条快路 */}
+      {goal === 'draft' && mvPassed === 0 && !interviewed && (
         <Link
           href={`/p/${id}/interview`}
           className="mt-7 block border border-[var(--accent)] bg-[var(--accent)]/8 p-6 transition-colors hover:bg-[var(--accent)]/12"

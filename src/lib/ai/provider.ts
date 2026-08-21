@@ -220,6 +220,24 @@ function ollamaBase(): string {
 }
 
 /**
+ * 模型在内存里留多久。
+ *
+ * 默认 -1＝常驻，直到你关掉 Ollama 或它要给别的模型腾地方。
+ * 理由是这套系统的实际节奏：写一整天，中间穿插改稿、查资料、发呆，
+ * 两次调用隔一两个小时很正常。Ollama 的计时从**上次调用结束**起算，
+ * 用「30m」这种有限值，等于每隔一阵就重付一次加载费（大模型几百秒）。
+ *
+ * 内存吃紧就用 TENON_OLLAMA_KEEPALIVE 调：'30m' 有限期，'0' 用完立刻释放。
+ */
+function keepAlive(): string | number {
+  const v = process.env.TENON_OLLAMA_KEEPALIVE
+  if (v == null || v === '') return -1
+  // Ollama 的 keep_alive 收「时长字符串」或「秒数」。纯数字要按数字发，
+  // 发成字符串会被当时长解析，"-1" 解析失败就退回默认的 5 分钟，静默失效。
+  return /^-?\d+$/.test(v.trim()) ? Number(v) : v
+}
+
+/**
  * 思考型模型（qwen3 等）会把推理过程包在 <think></think> 里。
  * 写手的输出会直接落进 chapters.body——思考过程混进正文就是灾难，
  * 所以请求里关掉 think，这里再兜一道底（有些模型或版本不认 think 参数）。
@@ -243,10 +261,7 @@ async function viaOllama(prompt: string, model: string, opts: RunOpts): Promise<
         model,
         stream: true,
         think: false,
-        // Ollama 默认只把模型留在内存 5 分钟。日更一章要连跑写手→审稿人→修订师→记录员→读者模型，
-        // 中间一停顿就被卸载，下一次调用重新付一遍加载时间（大模型能到几百秒）。
-        // 可用 TENON_OLLAMA_KEEPALIVE 调整，设成 0 则每次用完立刻释放显存。
-        keep_alive: process.env.TENON_OLLAMA_KEEPALIVE ?? '30m',
+        keep_alive: keepAlive(),
         messages: [
           ...(opts.system ? [{ role: 'system', content: opts.system }] : []),
           { role: 'user', content: prompt },
