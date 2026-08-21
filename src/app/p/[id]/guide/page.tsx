@@ -53,54 +53,97 @@ export default async function GuidePage({ params }: { params: Promise<{ id: stri
     pending.find((x) => x.weight === '必经') ??
     pending[0]
 
-  const upcoming = pending.filter((x) => x.s.id !== next?.s.id).slice(0, 5)
+  // 「接下来」按当前目标排：没动笔之前，通往动笔的那几项排前面，
+  // 否则会出现「推荐做 07，列表却从 06 开头」这种自相矛盾的观感
+  const upcoming = pending
+    .filter((x) => x.s.id !== next?.s.id)
+    .sort((a, b) => (mvReady ? 0 : Number(!!b.s.minViable) - Number(!!a.s.minViable)))
+    .slice(0, 5)
   const blockers = next ? next.s.needs.filter((d) => !passedIds.has(d) && weights[d] !== '不适用') : []
+
+  // 只有一个目标：没动笔之前，一切都为「能写第一章」服务；动笔之后才谈全路线。
+  const goal = mvReady ? 'core' : 'draft'
+  const mvLeft = mv.filter((x) => !x.g.passed)
 
   const why = (x: typeof next) => {
     if (!x) return ''
-    if (x.s.minViable) return '它属于「最小可动笔集合」——这些齐了你就能写第一章，不必等其余环节'
-    if (blockers.length) return '它是路线上下一个必经环节；上游还有没过的，但可以先动手'
-    return '它是路线上下一个必经环节，且上游依赖都已满足'
+    if (x.s.minViable)
+      return `这是「最小可动笔集合」里还没过的第一项。这个集合还差 ${mvLeft.length} 项，齐了就能写第一章。`
+    if (blockers.length)
+      return '它是路线上下一个必经环节。上游那几项还没过，但不挡你——它们定下来之后回头复核一次就行。'
+    return '它是路线上下一个必经环节，上游依赖都已满足。'
   }
+
+  /** 门禁里有几项是系统从数据里算的——把它和"人要勾的"分开说，否则数字看着像自己填过 */
+  const autoCount = (x: typeof next) => (x ? x.s.gate.filter((g) => g.auto).length : 0)
 
   return (
     <div className="mx-auto max-w-[760px] px-10 py-12">
       <Eyebrow>引导模式</Eyebrow>
       <h1 className="display mt-3 text-[26px]">
-        {mvReady ? '可以写第一章了' : '你现在该做这个'}
+        {goal === 'draft' ? `离动笔还差 ${mvLeft.length} 步` : '可以写第一章了'}
       </h1>
 
-      {/* 全局进度 */}
-      <div className="mt-5 grid grid-cols-3 gap-px overflow-hidden border border-[var(--line-soft)] bg-[var(--line-soft)]">
-        {[
-          {
-            k: '最小可动笔',
-            v: `${mvPassed}/${mv.length}`,
-            s: mvReady ? '齐了' : '齐了就能写第一章',
-            tone: mvReady ? 'var(--color-celadon)' : 'var(--accent)',
-          },
-          { k: '必经环节', v: `${corePassed}/${core.length}`, s: '本书路线', tone: 'var(--text)' },
-          {
-            k: '路线规模',
-            v: `${inRoute.length}`,
-            s: `全图 ${STAGES.length} · 裁掉 ${STAGES.length - inRoute.length}`,
-            tone: 'var(--text)',
-          },
-        ].map((x) => (
-          <div key={x.k} className="bg-[var(--surface)] px-4 py-3.5">
-            <div className="eyebrow">{x.k}</div>
-            <div className="num mt-1.5 text-[26px] font-light leading-none" style={{ color: x.tone }}>
-              {x.v}
-            </div>
-            <div className="mt-1.5 text-[12px] text-[var(--text-faint)]">{x.s}</div>
-          </div>
-        ))}
+      {/* 主指标只有一个：当前目标的进度。其余降级为一行小字，不跟它抢注意力 */}
+      <div className="mt-5 border border-[var(--line-soft)] bg-[var(--surface)] px-5 py-4">
+        <div className="flex items-baseline gap-2.5">
+          <span className="eyebrow">{goal === 'draft' ? '最小可动笔集合' : '本书必经环节'}</span>
+          <span className="num ml-auto text-[18px] font-light">
+            {goal === 'draft' ? `${mvPassed}/${mv.length}` : `${corePassed}/${core.length}`}
+          </span>
+        </div>
+        <div className="mt-2.5 flex gap-px overflow-hidden">
+          {(goal === 'draft' ? mv : core).map((x) => (
+            <span
+              key={x.s.id}
+              title={`${x.s.title}${x.g.passed ? '（已过）' : ''}`}
+              className="h-1.5 flex-1"
+              style={{
+                background: x.g.passed
+                  ? goal === 'draft'
+                    ? 'var(--accent)'
+                    : 'var(--color-celadon)'
+                  : 'var(--line)',
+              }}
+            />
+          ))}
+        </div>
+        <p className="mt-2.5 text-[12px] leading-relaxed text-[var(--text-faint)]">
+          {goal === 'draft' ? (
+            <>
+              还差：{mvLeft.map((x) => x.s.title).join('、')}
+              。齐了就能写第一章，其余环节可以边写边补。
+            </>
+          ) : (
+            <>动笔所需的都齐了。剩下的是让这本书走得更远的环节，不挡你更新。</>
+          )}
+        </p>
       </div>
 
       <p className="mt-2.5 text-[12px] leading-relaxed text-[var(--text-faint)]">
-        阵地：{venue.name}　类型：{genre?.name ?? '未定'}
-        —— 这两个决定了路线怎么裁。地图是全的，路是裁出来的。
+        阵地：{venue.name}　类型：{genre?.name ?? '未定'}　本书路线 {inRoute.length} 环节（全图{' '}
+        {STAGES.length}，裁掉 {STAGES.length - inRoute.length}）
+        {goal === 'draft' && `　必经 ${corePassed}/${core.length}`}
       </p>
+
+      {/* 一个都没过的时候，逐个填 7 个环节太劝退——先给一条快路 */}
+      {goal === 'draft' && mvPassed === 0 && (
+        <Link
+          href={`/p/${id}/interview`}
+          className="mt-7 block border border-[var(--accent)] bg-[var(--accent)]/8 p-6 transition-colors hover:bg-[var(--accent)]/12"
+        >
+          <div className="flex items-center gap-2.5">
+            <Chip tone="accent">推荐</Chip>
+            <span className="text-[12px] text-[var(--text-faint)]">最快的一条路</span>
+          </div>
+          <h2 className="mt-2.5 text-[18px] font-semibold tracking-tight">开书访谈 · 回答 4 个问题</h2>
+          <p className="mt-2 text-[14px] leading-[1.8] text-[var(--text-dim)]">
+            这 7 个环节有 30 个字段，但真正只有你知道的就 4 件事：那个画面、他要什么、什么挡着他、想要什么文风。
+            其余的类型库里已经有，或者能从你的回答里推出来——补成草稿给你审，不用对着空框写。
+          </p>
+          <div className="mt-4 text-[14px] font-medium text-[var(--accent)]">开始访谈 →</div>
+        </Link>
+      )}
 
       {/* 当前该做的 */}
       {next ? (
@@ -121,6 +164,7 @@ export default async function GuidePage({ params }: { params: Promise<{ id: stri
             {next.weight === '增强' && <Chip tone="mute">增强</Chip>}
             <span className="num ml-auto text-[12px] text-[var(--text-faint)]">
               门禁 {next.g.done}/{next.g.total}
+              {autoCount(next) > 0 && `（${autoCount(next)} 项系统判）`}
             </span>
           </div>
           <h2 className="mt-2.5 text-[18px] font-semibold tracking-tight">{next.s.title}</h2>
@@ -140,8 +184,9 @@ export default async function GuidePage({ params }: { params: Promise<{ id: stri
 
           {blockers.length > 0 && (
             <p className="mt-3 text-[12px] leading-relaxed text-[var(--color-ochre)]">
-              上游还没过：{blockers.map((b) => STAGES.find((s) => s.id === b)?.title).join('、')}
-              —— 可以先动手，但这几项定下来后要回头复核。
+              照常做这一项，不用等
+              {blockers.map((b) => STAGES.find((s) => s.id === b)?.title).join('、')}
+              ——它还没过，但只影响细节不影响你现在能不能动手；等它定了回头扫一眼这里就行。
             </p>
           )}
 
@@ -229,7 +274,7 @@ export default async function GuidePage({ params }: { params: Promise<{ id: stri
       </section>
 
       <p className="mt-8 text-[12px] leading-relaxed text-[var(--text-faint)]">
-        入口分诊的五种起点见
+        入口分诊的六种起点见
         <Link href="/new" className="mx-1 text-[var(--accent)]">
           新建作品
         </Link>

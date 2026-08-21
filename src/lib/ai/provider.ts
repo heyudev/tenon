@@ -243,6 +243,10 @@ async function viaOllama(prompt: string, model: string, opts: RunOpts): Promise<
         model,
         stream: true,
         think: false,
+        // Ollama 默认只把模型留在内存 5 分钟。日更一章要连跑写手→审稿人→修订师→记录员→读者模型，
+        // 中间一停顿就被卸载，下一次调用重新付一遍加载时间（大模型能到几百秒）。
+        // 可用 TENON_OLLAMA_KEEPALIVE 调整，设成 0 则每次用完立刻释放显存。
+        keep_alive: process.env.TENON_OLLAMA_KEEPALIVE ?? '30m',
         messages: [
           ...(opts.system ? [{ role: 'system', content: opts.system }] : []),
           { role: 'user', content: prompt },

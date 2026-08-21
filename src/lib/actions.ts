@@ -2,12 +2,12 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import {
+import {
   cast,
   chapters,
   decisions,
   locks,
-  metrics,
+  metrics,
   projects,
   stageStore,
   threads,
@@ -52,6 +52,42 @@ export async function saveStage(
   patch: { data?: Record<string, unknown>; gate?: Record<string, boolean>; status?: string },
 ) {
   stageStore.save(projectId, stageId, patch as never)
+  touch(projectId)
+}
+
+/* ── 开书访谈 ── */
+
+/**
+ * 采纳访谈草稿。**只写人在复核屏上勾选过的那些环节**——
+ * 这是「AI 产出不自动落库」在这条路径上的落点，不要改成全量写入。
+ */
+export async function commitInterview(
+  projectId: string,
+  picked: {
+    answers: Record<string, string>
+    stages: Record<string, Record<string, unknown>>
+    hero?: Record<string, string> | null
+  },
+) {
+  // 作者亲口答的那几项，直接进核心创意成型
+  const { scene, want, block } = picked.answers
+  const core: Record<string, unknown> = {}
+  if (scene) core.scene = scene
+  if (want) core.want = want
+  if (block) core.block = block
+  if (Object.keys(core).length) stageStore.save(projectId, 'b9-core', { data: core, status: '进行中' })
+
+  for (const [stageId, data] of Object.entries(picked.stages)) {
+    if (!data || Object.keys(data).length === 0) continue
+    stageStore.save(projectId, stageId, { data, status: '进行中' })
+  }
+
+  if (picked.hero && picked.hero.name) {
+    const id = cast.create(projectId, picked.hero.name, '主角')
+    const { name: _drop, ...rest } = picked.hero
+    cast.update(id, rest)
+  }
+
   touch(projectId)
 }
 

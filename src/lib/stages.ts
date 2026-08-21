@@ -390,7 +390,10 @@ export const STAGES: Stage[] = [
     output: '平台 / 频道 / 类型三参数 + 读者契约一句话 + 本书路线',
     route: { always: true },
     minViable: true,
-    needs: ['b1-market'],
+    // 不依赖市场与赛道：那一步值得做，但不该挡着人开书。
+    // 最小可动笔集合的依赖闭包必须留在集合内部，否则「7 项齐了就能写第一章」是句假话，
+    // 引导模式也会被迫把人推去集合外的环节。
+    needs: [],
     view: 'generic',
     craft: ['c-market', 'c-channel', 'plat-fanqie', 'plat-qidian'],
     ai: [{ id: 'contract', label: '推演读者契约', role: '读者模型', hint: '这个类型的读者在期待什么、最不能忍什么' }],

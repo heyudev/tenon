@@ -169,10 +169,8 @@ export default function SettingsForm({
           资产层是本系统自己的库存，全部存在仓库内的{' '}
           <code className="rounded-[2px] bg-[var(--bg-sunk)] px-1.5 py-0.5">seed/assets.json</code>，不依赖任何外部目录。
           <br />
-          重建（覆盖资产层，保留规则的实战记录与全部项目数据）：
+          重建（只覆盖方法论卡与核心资源两张表，不碰任何项目数据）：
           <code className="ml-1.5 rounded-[2px] bg-[var(--bg-sunk)] px-1.5 py-0.5">npm run seed</code>
-          <br />
-          在图谱里人工补的边（origin=补充）不会被重建冲掉。
         </p>
       </section>
     </div>

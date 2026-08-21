@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { STAGE_MAP, STAGES, gateProgress, isSequential } from '@/lib/stages'
 import { venueOf, weightsOf } from '@/lib/route'
+import { CHANNELS, GENRE_MAP } from '@/lib/genre'
 import { autosOf } from '@/lib/gate-ctx'
 import { assets, cast, chapters, metrics, projects, stageStore, threads, volumes } from '@/lib/repo'
 import GenericStage from './views/GenericStage'
@@ -65,7 +66,19 @@ export default async function StagePage({
       return <MetricStage {...common} venue={venueOf(p)} chapters={chapters.list(id)} rows={metrics.list(id)} />
     case 'write':
       return <WriteRedirect projectId={id} stage={stage} />
-    default:
-      return <GenericStage {...common} />
+    default: {
+      // 类型库里已经写好了读者契约 / 必备元素 / 雷区，字段 id 正好对得上。
+      // 让人对着空框重打一遍是纯浪费——给一键带入，改比填快。
+      const g = p.genre ? GENRE_MAP[p.genre] : null
+      const presets =
+        stageId === 'b2-genre' && g
+          ? {
+              label: `「${g.name}」的类型契约已经在库里`,
+              note: '带入后按你这本书的实际情况改——这是本类型的通例，不是你的差异化。',
+              data: { contract: g.contract, musts: g.musts, mines: [...g.mines, ...CHANNELS[venueOf(p).channel].mines.slice(0, 2)] },
+            }
+          : undefined
+      return <GenericStage {...common} presets={presets} />
+    }
   }
 }

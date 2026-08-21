@@ -342,15 +342,23 @@ export function useAutoSave(projectId: string, stageId: string, initial: Record<
     setDirty(false)
   }
 
-  const set = (id: string, v: unknown) => {
-    const next = { ...data, [id]: v }
+  const commit = (next: Record<string, unknown>) => {
     setData(next)
     setDirty(true)
     if (timer.current) clearTimeout(timer.current)
     timer.current = setTimeout(() => flush(next), 800)
   }
 
+  const set = (id: string, v: unknown) => commit({ ...data, [id]: v })
+
+  /**
+   * 一次改多个字段必须走这里。
+   * 连着调 set() 会全部基于同一份闭包 data 合并，只有最后一次生效——
+   * 落库的也是那一份，前面的改动直接丢掉。
+   */
+  const setMany = (patch: Record<string, unknown>) => commit({ ...data, ...patch })
+
   useEffect(() => () => void (timer.current && clearTimeout(timer.current)), [])
 
-  return { data, set, dirty, flush }
+  return { data, set, setMany, dirty, flush }
 }
