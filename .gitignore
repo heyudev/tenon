@@ -15,3 +15,6 @@ data/*.db-shm
 .env
 .env.local
 .DS_Store
+
+# 快捷方式存的是绝对路径，换机器就失效——本地生成，不进仓库
+*.lnk

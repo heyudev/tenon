@@ -9,17 +9,30 @@ export default function SettingsForm({
   probes,
   current,
   models,
+  options,
   counts,
 }: {
   providers: { id: string; label: string; desc: string; needsKey: boolean; defaultModel: string }[]
   probes: Record<string, { ok: boolean; detail: string }>
   current: string
   models: Record<string, string>
+  /** 每个后端的候选模型。Ollama 是本机实拉的，其余是静态清单 */
+  options: Record<string, string[]>
   counts: { craft: number; resources: number }
 }) {
   const [sel, setSel] = useState(current)
   const [mdl, setMdl] = useState(models)
   const [saved, setSaved] = useState(false)
+  // 当前值不在候选里（或压根没候选）就落到自由输入，清单过时也不挡路
+  const [custom, setCustom] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(
+      providers.map((p) => {
+        const list = options[p.id] ?? []
+        const cur = models[p.id] ?? ''
+        return [p.id, list.length === 0 || (cur !== '' && !list.includes(cur))]
+      }),
+    ),
+  )
 
   return (
     <div className="mx-auto max-w-[720px] px-10 py-14">
@@ -62,17 +75,54 @@ export default function SettingsForm({
                 </div>
                 <p className="ml-[23px] mt-1.5 text-[14px] leading-relaxed text-[var(--text-dim)]">{p.desc}</p>
                 {on && (
-                  <div className="ml-[23px] mt-3 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <div className="ml-[23px] mt-3 flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <span className="text-[14px] text-[var(--text-faint)]">模型</span>
-                    <input
-                      value={mdl[p.id] ?? ''}
-                      onChange={(e) => {
-                        setMdl({ ...mdl, [p.id]: e.target.value })
-                        setSaved(false)
-                      }}
-                      placeholder={p.defaultModel}
-                      className="field h-8 w-[220px]"
-                    />
+                    {(options[p.id] ?? []).length > 0 && !custom[p.id] ? (
+                      <select
+                        value={mdl[p.id] || p.defaultModel}
+                        onChange={(e) => {
+                          if (e.target.value === '__custom__') {
+                            setCustom({ ...custom, [p.id]: true })
+                            return
+                          }
+                          setMdl({ ...mdl, [p.id]: e.target.value })
+                          setSaved(false)
+                        }}
+                        className="h-8 w-[240px] cursor-pointer rounded-[2px] border border-[var(--line)] bg-transparent px-2 text-[14px]"
+                      >
+                        {(options[p.id] ?? []).map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                        <option value="__custom__">自定义…</option>
+                      </select>
+                    ) : (
+                      <>
+                        <input
+                          value={mdl[p.id] ?? ''}
+                          onChange={(e) => {
+                            setMdl({ ...mdl, [p.id]: e.target.value })
+                            setSaved(false)
+                          }}
+                          placeholder={p.defaultModel}
+                          className="field h-8 w-[240px]"
+                        />
+                        {(options[p.id] ?? []).length > 0 && (
+                          <button
+                            onClick={() => setCustom({ ...custom, [p.id]: false })}
+                            className="text-[12px] text-[var(--accent)] hover:underline"
+                          >
+                            回到列表
+                          </button>
+                        )}
+                      </>
+                    )}
+                    {p.id === 'ollama' && (options[p.id] ?? []).length === 0 && (
+                      <span className="text-[12px] text-[var(--text-faint)]">
+                        没读到本机模型，先 <code>ollama pull qwen3:8b</code>
+                      </span>
+                    )}
                   </div>
                 )}
               </button>

@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { getSetting } from '../db'
 
-export type ProviderId = 'claude-cli' | 'codex-cli' | 'anthropic-api'
+export type ProviderId = 'claude-cli' | 'codex-cli' | 'anthropic-api' | 'ollama'
 
 export interface ProviderInfo {
   id: ProviderId
@@ -12,6 +12,11 @@ export interface ProviderInfo {
   desc: string
   needsKey: boolean
   defaultModel: string
+  /**
+   * 下拉里的候选模型。静态清单，可能过时——所以界面始终留「自定义」的口子。
+   * Ollama 不写在这里：它的清单是本机实拉的，由 listModels() 现查。
+   */
+  models?: string[]
 }
 
 export const PROVIDERS: ProviderInfo[] = [
@@ -21,6 +26,7 @@ export const PROVIDERS: ProviderInfo[] = [
     desc: '调用本机 claude 命令，复用你已登录的订阅，无需 API key。',
     needsKey: false,
     defaultModel: 'opus',
+    models: ['opus', 'sonnet', 'haiku'],
   },
   {
     id: 'anthropic-api',
@@ -28,6 +34,14 @@ export const PROVIDERS: ProviderInfo[] = [
     desc: '直接调 Messages API，延迟最低、可控性最好。需要 ANTHROPIC_API_KEY。',
     needsKey: true,
     defaultModel: 'claude-opus-5',
+    models: ['claude-opus-5', 'claude-sonnet-5', 'claude-haiku-4-5-20251001'],
+  },
+  {
+    id: 'ollama',
+    label: 'Ollama（本地）',
+    desc: '调本机 Ollama，完全离线、不花钱。质量取决于你拉的模型；写手够用，审稿人与裁决建议仍走云端。',
+    needsKey: false,
+    defaultModel: 'qwen3:8b',
   },
   {
     id: 'codex-cli',
@@ -35,6 +49,7 @@ export const PROVIDERS: ProviderInfo[] = [
     desc: '调用本机 codex 命令。作为备用后端 / 交叉验证用。',
     needsKey: false,
     defaultModel: 'gpt-5-codex',
+    models: ['gpt-5-codex'],
   },
 ]
 
@@ -78,6 +93,8 @@ export async function runAI(prompt: string, opts: RunOpts = {}): Promise<RunResu
 
   if (provider === 'anthropic-api') {
     text = await viaApi(prompt, model, opts)
+  } else if (provider === 'ollama') {
+    text = await viaOllama(prompt, model, opts)
   } else if (provider === 'codex-cli') {
     text = await viaCodex(prompt, model, opts)
   } else {
@@ -178,6 +195,111 @@ async function viaClaude(prompt: string, model: string, opts: RunOpts): Promise<
   return exec('claude', args, prompt, opts, '确认 claude CLI 已安装并已登录（终端里跑一次 `claude` 试试）。')
 }
 
+/**
+ * 某个后端的候选模型清单。
+ * Ollama 现查本机实拉的（你随时会 pull 新模型，写死就会过时）；其余用静态清单。
+ * 查不到就返回空数组——界面会退回自由输入，不挡路。
+ */
+export async function listModels(p: ProviderId): Promise<string[]> {
+  if (p !== 'ollama') return PROVIDERS.find((x) => x.id === p)?.models ?? []
+  try {
+    const r = await fetch(`${ollamaBase()}/api/tags`, { signal: AbortSignal.timeout(3000) })
+    if (!r.ok) return []
+    const j = (await r.json()) as { models?: { name: string }[] }
+    return (j.models ?? []).map((m) => m.name).sort()
+  } catch {
+    return []
+  }
+}
+
+/* ── Ollama（本地） ────────────────────────────── */
+
+/** Ollama 服务地址。默认本机，可用 TENON_OLLAMA_URL 覆盖（比如指到局域网另一台机器） */
+function ollamaBase(): string {
+  return (process.env.TENON_OLLAMA_URL ?? 'http://localhost:11434').replace(/\/+$/, '')
+}
+
+/**
+ * 思考型模型（qwen3 等）会把推理过程包在 <think></think> 里。
+ * 写手的输出会直接落进 chapters.body——思考过程混进正文就是灾难，
+ * 所以请求里关掉 think，这里再兜一道底（有些模型或版本不认 think 参数）。
+ */
+function stripThink(t: string): string {
+  return t
+    .replace(/<think>[\s\S]*?<\/think>/g, '')
+    .replace(/^\s*<think>[\s\S]*$/, '')
+    .trimStart()
+}
+
+async function viaOllama(prompt: string, model: string, opts: RunOpts): Promise<string> {
+  const base = ollamaBase()
+  let res: Response
+  try {
+    res = await fetch(`${base}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: opts.signal,
+      body: JSON.stringify({
+        model,
+        stream: true,
+        think: false,
+        messages: [
+          ...(opts.system ? [{ role: 'system', content: opts.system }] : []),
+          { role: 'user', content: prompt },
+        ],
+      }),
+    })
+  } catch (e) {
+    throw new Error(`连不上 Ollama（${base}）：${(e as Error).message}。确认服务已启动。`)
+  }
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    if (res.status === 404) throw new Error(`Ollama 里没有模型「${model}」。先执行：ollama pull ${model}`)
+    throw new Error(`Ollama 返回 ${res.status}${body ? `：${body.slice(0, 300)}` : ''}`)
+  }
+  if (!res.body) throw new Error('Ollama 没有返回流')
+
+  // NDJSON：一行一个 JSON。网络分片会切断行，未读完的尾巴要留到下一轮
+  const reader = res.body.getReader()
+  const dec = new TextDecoder()
+  let buf = ''
+  let out = ''
+  let thinking = false
+
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buf += dec.decode(value, { stream: true })
+    const lines = buf.split('\n')
+    buf = lines.pop() ?? ''
+    for (const line of lines) {
+      const t = line.trim()
+      if (!t) continue
+      let j: { message?: { content?: string }; error?: string }
+      try {
+        j = JSON.parse(t)
+      } catch {
+        continue
+      }
+      if (j.error) throw new Error(`Ollama：${j.error}`)
+      const piece = j.message?.content
+      if (!piece) continue
+      // <think> 标记可能跨分片到达，按开合状态逐段丢弃
+      let emit = ''
+      for (const seg of piece.split(/(<think>|<\/think>)/)) {
+        if (seg === '<think>') thinking = true
+        else if (seg === '</think>') thinking = false
+        else if (!thinking) emit += seg
+      }
+      if (!emit) continue
+      out += emit
+      opts.onChunk?.(emit)
+    }
+  }
+  return stripThink(out)
+}
+
 /* ── codex CLI ────────────────────────────────── */
 
 async function viaCodex(prompt: string, model: string, opts: RunOpts): Promise<string> {
@@ -214,6 +336,19 @@ export async function probe(p: ProviderId): Promise<{ ok: boolean; detail: strin
     return process.env.ANTHROPIC_API_KEY
       ? { ok: true, detail: '已读到 ANTHROPIC_API_KEY' }
       : { ok: false, detail: '未设置 ANTHROPIC_API_KEY' }
+  if (p === 'ollama') {
+    try {
+      const r = await fetch(`${ollamaBase()}/api/tags`, { signal: AbortSignal.timeout(3000) })
+      if (!r.ok) return { ok: false, detail: `Ollama 返回 ${r.status}` }
+      const j = (await r.json()) as { models?: { name: string }[] }
+      const names = (j.models ?? []).map((m) => m.name)
+      return names.length
+        ? { ok: true, detail: `已拉 ${names.length} 个：${names.slice(0, 4).join('、')}` }
+        : { ok: false, detail: '服务在跑，但一个模型都没拉。先执行 ollama pull qwen3:8b' }
+    } catch {
+      return { ok: false, detail: `连不上 ${ollamaBase()}，确认 Ollama 已启动` }
+    }
+  }
   const cmd = p === 'claude-cli' ? 'claude' : 'codex'
   return new Promise((resolve) => {
     const c = spawn(cmd, ['--version'], { cwd: workdir(), env: cliEnv() as NodeJS.ProcessEnv })
