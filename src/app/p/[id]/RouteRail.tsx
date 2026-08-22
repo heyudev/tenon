@@ -83,6 +83,9 @@ export default function RouteRail({
       <Quick href={`/p/${projectId}/guide`} path={path}>
         <span className="text-[var(--accent)]">引导模式 · 我该做什么</span>
       </Quick>
+      <Quick href={`/p/${projectId}/interview`} path={path}>
+        开书访谈 · 4 问换一版草稿
+      </Quick>
 
       <div className="eyebrow px-2.5 pb-1 pt-3">真相源</div>
       <Quick href={`/p/${projectId}/cast`} path={path}>人物档案</Quick>

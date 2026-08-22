@@ -31,7 +31,9 @@ export async function createProject(fd: FormData) {
   // schema 的默认值与展示处都按 id 来
   const p = projects.create(title, v.id, v.operator, v.channel, String(fd.get('genre') ?? '') || null)
   touch()
-  redirect(`/p/${p.id}`)
+  // 直接进访谈，不要把人扔到 46 环节的总览页上自己找路。
+  // 访谈页有「跳过，我自己填」的出口，想按老路走的人一步就能出去。
+  redirect(`/p/${p.id}/interview`)
 }
 
 export async function updateProject(id: string, patch: Record<string, unknown>) {
