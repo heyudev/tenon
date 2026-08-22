@@ -5,6 +5,7 @@ import { LAYER_MAP, STAGES, gateProgress, isSequential } from '@/lib/stages'
 import { weightsOf, venueOf } from '@/lib/route'
 import { autosOf } from '@/lib/gate-ctx'
 import { GENRE_MAP, ENTRIES } from '@/lib/genre'
+// 注意：cx 出自 'use client' 的 ui.tsx，服务端组件不能调用它（类型检查发现不了，运行时 500）
 import { Chip, Eyebrow } from '@/components/ui'
 
 /**
@@ -117,15 +118,81 @@ export default async function GuidePage({ params }: { params: Promise<{ id: stri
         </div>
         <p className="mt-2.5 text-[12px] leading-relaxed text-[var(--text-faint)]">
           {goal === 'draft' ? (
-            <>
-              还差：{mvLeft.map((x) => x.s.title).join('、')}
-              。齐了就能写第一章，其余环节可以边写边补。
-            </>
+            <>这 {mv.length} 步齐了就能写第一章。其余 {inRoute.length - mv.length} 个环节都可以边写边补。</>
           ) : (
             <>动笔所需的都齐了。剩下的是让这本书走得更远的环节，不挡你更新。</>
           )}
         </p>
       </div>
+
+      {/* 门槛一过，这件事就该是全页最响的——别让人还得自己找「那我现在能写了吗」 */}
+      {mvReady && (
+        <div className="mt-4 border border-[var(--color-celadon)] bg-[var(--color-celadon)]/8 p-6">
+          <h2 className="text-[18px] font-semibold tracking-tight">动笔所需的都齐了，现在可以写第一章</h2>
+          <p className="mt-2 text-[14px] leading-[1.8] text-[var(--text-dim)]">
+            类型契约、核心创意、卖点、金手指、主角、视角、文风都定死了。
+            剩下 {inRoute.length - mv.length} 个环节全部可以边写边补——而且开篇试水的真实数据，
+            反过来还会推翻你现在的一部分设定，所以先写比先补更划算。
+          </p>
+          <div className="mt-4 flex flex-wrap items-center gap-4">
+            <Link
+              href={`/p/${id}/write`}
+              className="rounded-[2px] border border-[var(--accent)] bg-[var(--accent)] px-4 py-2 text-[14px] font-medium text-[var(--on-accent)]"
+            >
+              去日更台写第一章 →
+            </Link>
+            <Link href={`/p/${id}/s/e4-opening`} className="text-[14px] text-[var(--text-dim)] hover:text-[var(--text)]">
+              先比几版开篇方案
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* 把 7 步摊开编号：哪几步做完了、下一步是哪个、每步做完得到什么，一眼看全 */}
+      {goal === 'draft' && (
+        <ol className="mt-3 space-y-px overflow-hidden border border-[var(--line-soft)]">
+          {mv.map((x, i) => {
+            const isNext = x.s.id === next?.s.id
+            return (
+              <li key={x.s.id}>
+                <Link
+                  href={`/p/${id}/s/${x.s.id}`}
+                  className={
+                    'flex items-center gap-3 px-4 py-2.5 transition-colors ' +
+                    (isNext ? 'bg-[var(--accent)]/8' : 'bg-[var(--surface)] hover:bg-[var(--bg-sunk)]')
+                  }
+                >
+                  <span
+                    className={
+                      'num flex h-5 w-5 flex-none items-center justify-center rounded-full text-[11px] ' +
+                      (x.g.passed
+                        ? 'bg-[var(--accent)] text-[var(--on-accent)]'
+                        : isNext
+                          ? 'border border-[var(--accent)] text-[var(--accent)]'
+                          : 'border border-[var(--line)] text-[var(--text-faint)]')
+                    }
+                  >
+                    {x.g.passed ? '✓' : i + 1}
+                  </span>
+                  <span
+                    className={
+                      'flex-none text-[14px] ' +
+                      (x.g.passed ? 'text-[var(--text-faint)] line-through' : '')
+                    }
+                  >
+                    {x.s.title}
+                  </span>
+                  {isNext && <Chip tone="accent">下一步</Chip>}
+                  <span className="min-w-0 flex-1 truncate text-[12px] text-[var(--text-faint)]">{x.s.output}</span>
+                  <span className="num flex-none text-[12px] text-[var(--text-faint)]">
+                    {x.g.done}/{x.g.total}
+                  </span>
+                </Link>
+              </li>
+            )
+          })}
+        </ol>
+      )}
 
       <p className="mt-2.5 text-[12px] leading-relaxed text-[var(--text-faint)]">
         阵地：{venue.name}　类型：{genre?.name ?? '未定'}　本书路线 {inRoute.length} 环节（全图{' '}
@@ -144,23 +211,50 @@ export default async function GuidePage({ params }: { params: Promise<{ id: stri
         </div>
       )}
 
-      {/* 一个都没过、也还没做过访谈的时候，逐个填 7 个环节太劝退——先给一条快路 */}
+      {/* 两种开书方式，并排摆出来由人选。互不替代：访谈是另一条独立的路，不是正常流程的加速器 */}
       {goal === 'draft' && mvPassed === 0 && !interviewed && (
-        <Link
-          href={`/p/${id}/interview`}
-          className="mt-7 block border border-[var(--accent)] bg-[var(--accent)]/8 p-6 transition-colors hover:bg-[var(--accent)]/12"
-        >
-          <div className="flex items-center gap-2.5">
-            <Chip tone="accent">推荐</Chip>
-            <span className="text-[12px] text-[var(--text-faint)]">最快的一条路</span>
+        <section className="mt-7">
+          <Eyebrow>两种开书方式，挑一种</Eyebrow>
+          <div className="mt-2.5 grid gap-2.5 md:grid-cols-2">
+            <Link
+              href={`/p/${id}/interview`}
+              className="flex flex-col border border-[var(--accent)] bg-[var(--accent)]/6 p-5 transition-colors hover:bg-[var(--accent)]/10"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-[14px] font-semibold">开书访谈</span>
+                <Chip tone="accent">快</Chip>
+              </div>
+              <p className="mt-2 flex-1 text-[14px] leading-[1.8] text-[var(--text-dim)]">
+                回答 4 个问题：那个画面、他要什么、什么挡着他、想要什么文风。
+                其余 20 多项由 AI 补成草稿，你逐组审——不用对着空框写。
+              </p>
+              <p className="mt-2.5 text-[12px] leading-relaxed text-[var(--text-faint)]">
+                适合：脑子里已经有个人和一个处境，想快点开写。
+                <br />
+                草稿仍要你过目采纳，之后照样逐环节勾门禁。
+              </p>
+              <span className="mt-3 text-[14px] font-medium text-[var(--accent)]">开始访谈 →</span>
+            </Link>
+
+            <Link
+              href={`/p/${id}/s/${mv[0]?.s.id ?? 'b2-genre'}`}
+              className="flex flex-col border border-[var(--line)] bg-[var(--surface)] p-5 transition-colors hover:border-[var(--text-faint)]"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-[14px] font-semibold">逐环节自己填</span>
+                <Chip tone="mute">细</Chip>
+              </div>
+              <p className="mt-2 flex-1 text-[14px] leading-[1.8] text-[var(--text-dim)]">
+                按 {mv.length} 步顺序走，每步都有「不做会死在哪里 / 怎么做 / 做到什么算够」。
+                每个字段自己定，AI 只在你点它的时候出手。
+              </p>
+              <p className="mt-2.5 text-[12px] leading-relaxed text-[var(--text-faint)]">
+                适合：想法还没定型，或者想借这套判据把它想清楚。
+              </p>
+              <span className="mt-3 text-[14px] font-medium">从第 1 步开始 →</span>
+            </Link>
           </div>
-          <h2 className="mt-2.5 text-[18px] font-semibold tracking-tight">开书访谈 · 回答 4 个问题</h2>
-          <p className="mt-2 text-[14px] leading-[1.8] text-[var(--text-dim)]">
-            这 7 个环节有 30 个字段，但真正只有你知道的就 4 件事：那个画面、他要什么、什么挡着他、想要什么文风。
-            其余的类型库里已经有，或者能从你的回答里推出来——补成草稿给你审，不用对着空框写。
-          </p>
-          <div className="mt-4 text-[14px] font-medium text-[var(--accent)]">开始访谈 →</div>
-        </Link>
+        </section>
       )}
 
       {/* 当前该做的 */}
@@ -223,18 +317,7 @@ export default async function GuidePage({ params }: { params: Promise<{ id: stri
       )}
 
       {/* 可以动笔了 */}
-      {mvReady && (
-        <div className="mt-4 border border-[var(--color-celadon)]/35 bg-[var(--color-celadon)]/5 px-5 py-4">
-          <div className="text-[14px] font-medium">最小可动笔集合已齐</div>
-          <p className="mt-1.5 text-[14px] leading-relaxed text-[var(--text-dim)]">
-            类型契约、核心创意、卖点、金手指、主角、视角、文风都定了——现在就可以写第一章。
-            剩下的环节可以边写边补，开篇试水的结果反过来还会改设定。
-          </p>
-          <Link href={`/p/${id}/s/e4-opening`} className="mt-2.5 inline-block text-[14px] font-medium text-[var(--accent)]">
-            去写开篇方案 →
-          </Link>
-        </div>
-      )}
+      {null}
 
       {/* 接下来 */}
       {upcoming.length > 0 && (
