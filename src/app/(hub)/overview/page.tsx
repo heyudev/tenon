@@ -7,6 +7,13 @@ import { GLOSSARY } from '@/lib/glossary'
 import { CHECKS } from '@/lib/checks'
 import { Chip, Eyebrow } from '@/components/ui'
 
+/**
+ * 读数据库的页面必须每次请求现算。
+ * Next 默认会把它静态预渲染，把「构建那一刻的库内容」烤进 HTML——
+ * 新建的书不出现、删掉的还在，用起来像坏了。
+ */
+export const dynamic = 'force-dynamic'
+
 /** 系统全貌：一页看完这台机器由什么构成、怎么咬合 */
 export default function OverviewPage() {
   const craft = assets.craft()
